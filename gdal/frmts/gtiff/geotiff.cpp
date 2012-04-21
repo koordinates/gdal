@@ -7577,6 +7577,7 @@ GDALDataset *GTiffDataset::Create( const char * pszFilename,
     poDS->nLZMAPreset = GTiffGetLZMAPreset(papszParmList);
     poDS->nJpegQuality = GTiffGetJpegQuality(papszParmList);
 
+#if !defined(BIGTIFF_SUPPORT)
 /* -------------------------------------------------------------------- */
 /*      If we are writing jpeg compression we need to write some        */
 /*      imagery to force the jpegtables to get created.  This is,       */
@@ -7603,6 +7604,7 @@ GDALDataset *GTiffDataset::Create( const char * pszFilename,
         }
         poDS->bDontReloadFirstBlock = TRUE;
     }
+#endif
 
 /* -------------------------------------------------------------------- */
 /*      Create band information objects.                                */
@@ -8125,6 +8127,8 @@ GTiffDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
     {
     }
 #endif
+
+#if !defined(BIGTIFF_SUPPORT)
     /* -------------------------------------------------------------------- */
     /*      If we are writing jpeg compression we need to write some        */
     /*      imagery to force the jpegtables to get created.  This is,       */
@@ -8151,6 +8155,7 @@ GTiffDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
         }
         bDontReloadFirstBlock = TRUE;
     }
+#endif
 
 /* -------------------------------------------------------------------- */
 /*      Cleanup                                                         */
