@@ -5,20 +5,20 @@
 # Project:  GDAL/OGR Test Suite
 # Purpose:  Test basic read support for a all datatypes from a TIFF file.
 # Author:   Frank Warmerdam <warmerdam@pobox.com>
-# 
+#
 ###############################################################################
 # Copyright (c) 2003, Frank Warmerdam <warmerdam@pobox.com>
-# 
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
 # License as published by the Free Software Foundation; either
 # version 2 of the License, or (at your option) any later version.
-# 
+#
 # This library is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # Library General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Library General Public
 # License along with this library; if not, write to the
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -59,7 +59,7 @@ init_list = [ \
     ('cfloat32.tif', 1, 5028, None),
     ('cfloat64.tif', 1, 5028, None),
 # The following four related partial final strip/tiles (#1179)
-    ('separate_tiled.tif', 2, 15234, None), 
+    ('separate_tiled.tif', 2, 15234, None),
     ('seperate_strip.tif', 2, 15234, None),
     ('contig_tiled.tif', 2, 15234, None),
     ('contig_strip.tif', 2, 15234, None),
@@ -70,7 +70,7 @@ init_list = [ \
 
 def tiff_read_off():
 
-    # Test absolute/offset directory access 
+    # Test absolute/offset directory access
     ds = gdal.Open('GTIFF_DIR:off:408:data/byte.tif')
     if ds.GetRasterBand(1).Checksum() != 4672:
         return 'fail'
@@ -97,7 +97,7 @@ def tiff_read_off():
 def tiff_check_alpha():
 
     # Grey + alpha
-    
+
     ds = gdal.Open('data/stefan_full_greyalpha.tif')
 
     if ds.GetRasterBand(2).GetRasterColorInterpretation()!= gdal.GCI_AlphaBand:
@@ -108,7 +108,7 @@ def tiff_check_alpha():
     ds = None
 
     # RGB + alpha
-    
+
     ds = gdal.Open('data/stefan_full_rgba.tif')
 
     if ds.GetRasterBand(4).GetRasterColorInterpretation()!= gdal.GCI_AlphaBand:
@@ -119,7 +119,7 @@ def tiff_check_alpha():
     ds = None
 
     # RGB + undefined
-    
+
     ds = gdal.Open('data/stefan_full_rgba_photometric_rgb.tif')
 
     if ds.GetRasterBand(4).GetRasterColorInterpretation()!= gdal.GCI_Undefined:
@@ -130,8 +130,8 @@ def tiff_check_alpha():
     ds = None
 
     return 'success'
-   
-    
+
+
 ###############################################################################
 # Test reading a CMYK tiff as RGBA image
 
@@ -366,7 +366,7 @@ def tiff_grads():
 # Check Erdas Citation Parsing for coordinate system.
 
 def tiff_citation():
-	
+
     return 'skip'
 
     ds = gdal.Open('data/citation_mixedcase.tif')
@@ -387,44 +387,44 @@ def tiff_citation():
 def tiff_linearparmunits():
 
     # Test the file with the correct formulation.
-    
+
     ds = gdal.Open('data/spaf27_correct.tif')
     wkt = ds.GetProjectionRef()
     ds = None
 
     srs = osr.SpatialReference( wkt )
-    
+
     fe = srs.GetProjParm(osr.SRS_PP_FALSE_EASTING)
     if abs(fe-2000000.0) > 0.001:
         gdaltest.post_reason( 'did not get expected false easting (1)' )
         return 'fail'
-    
+
     # Test the file with the old (broken) GDAL formulation.
-    
+
     ds = gdal.Open('data/spaf27_brokengdal.tif')
     wkt = ds.GetProjectionRef()
     ds = None
 
     srs = osr.SpatialReference( wkt )
-    
+
     fe = srs.GetProjParm(osr.SRS_PP_FALSE_EASTING)
     if abs(fe-609601.219202438) > 0.001:
         gdaltest.post_reason( 'did not get expected false easting (2)' )
         return 'fail'
-    
+
     # Test the file when using an EPSG code.
-    
+
     ds = gdal.Open('data/spaf27_epsg.tif')
     wkt = ds.GetProjectionRef()
     ds = None
 
     srs = osr.SpatialReference( wkt )
-    
+
     fe = srs.GetProjParm(osr.SRS_PP_FALSE_EASTING)
     if abs(fe-2000000.0) > 0.001:
         gdaltest.post_reason( 'did not get expected false easting (3)' )
         return 'fail'
-    
+
     return 'success'
 
 ###############################################################################
@@ -433,48 +433,48 @@ def tiff_linearparmunits():
 def tiff_linearparmunits2():
 
     gdal.SetConfigOption( 'GTIFF_LINEAR_UNITS', 'BROKEN' )
-    
+
     # Test the file with the correct formulation.
-    
+
     ds = gdal.Open('data/spaf27_correct.tif')
     wkt = ds.GetProjectionRef()
     ds = None
 
     srs = osr.SpatialReference( wkt )
-    
+
     fe = srs.GetProjParm(osr.SRS_PP_FALSE_EASTING)
     if abs(fe-6561666.66667) > 0.001:
         gdaltest.post_reason( 'did not get expected false easting (1)' )
         return 'fail'
-    
+
     # Test the file with the correct formulation that is marked as correct.
-    
+
     ds = gdal.Open('data/spaf27_markedcorrect.tif')
     wkt = ds.GetProjectionRef()
     ds = None
 
     srs = osr.SpatialReference( wkt )
-    
+
     fe = srs.GetProjParm(osr.SRS_PP_FALSE_EASTING)
     if abs(fe-2000000.0) > 0.001:
         gdaltest.post_reason( 'did not get expected false easting (2)' )
         return 'fail'
-    
+
     # Test the file with the old (broken) GDAL formulation.
-    
+
     ds = gdal.Open('data/spaf27_brokengdal.tif')
     wkt = ds.GetProjectionRef()
     ds = None
 
     srs = osr.SpatialReference( wkt )
-    
+
     fe = srs.GetProjParm(osr.SRS_PP_FALSE_EASTING)
     if abs(fe-2000000.0) > 0.001:
         gdaltest.post_reason( 'did not get expected false easting (3)' )
         return 'fail'
-    
+
     gdal.SetConfigOption( 'GTIFF_LINEAR_UNITS', 'DEFAULT' )
-    
+
     return 'success'
 
 ###############################################################################
@@ -484,11 +484,11 @@ def tiff_g4_split():
 
     if not 'GetBlockSize' in dir(gdal.Band):
         return 'skip'
-    
+
     ds = gdal.Open('data/slim_g4.tif')
 
     (blockx, blocky) = ds.GetRasterBand(1).GetBlockSize()
-    
+
     if blocky != 1:
         gdaltest.post_reason( 'Did not get scanline sized blocks.' )
         return 'fail'
@@ -498,7 +498,7 @@ def tiff_g4_split():
         print(cs)
         gdaltest.post_reason( 'Got wrong checksum' )
         return 'fail'
-    
+
     return 'success'
 
 ###############################################################################
@@ -517,7 +517,7 @@ def tiff_multi_images():
         print(md)
         gdaltest.post_reason( 'did not get expected subdatasets metadata.' )
         return 'fail'
-    
+
     ds = None
 
     # Explicitely get the content of the first image
@@ -650,7 +650,7 @@ def tiff_12bitjpeg():
         stats = ds.GetRasterBand(1).GetStatistics( 0, 1 )
     except:
         pass
-    
+
     if stats[2] < 2150 or stats[2] > 2180 or str(stats[2]) == 'nan':
         gdaltest.post_reason( 'did not get expected mean for band1.')
         print(stats)
@@ -709,10 +709,10 @@ def tiff_read_stats_from_pam():
 # Test extracting georeferencing from a .TAB file
 
 def tiff_read_from_tab():
-    
+
     ds = gdal.GetDriverByName('GTiff').Create('tmp/tiff_read_from_tab.tif', 1, 1)
     ds = None
-    
+
     f = open('tmp/tiff_read_from_tab.tab', 'wt')
     f.write("""!table
 !version 300
@@ -786,7 +786,7 @@ def tiff_read_pixelispoint():
         print(gt)
         gdaltest.post_reason( 'did not get expected geotransform with GTIFF_POINT_GEO_IGNORE TRUE' )
         return 'fail'
-    
+
     gdal.SetConfigOption( 'GTIFF_POINT_GEO_IGNORE', 'FALSE' )
 
     return 'success'
@@ -821,7 +821,7 @@ def tiff_read_geomatrix():
         print(gt)
         gdaltest.post_reason( 'did not get expected geotransform with GTIFF_POINT_GEO_IGNORE TRUE' )
         return 'fail'
-    
+
     gdal.SetConfigOption( 'GTIFF_POINT_GEO_IGNORE', 'FALSE' )
 
     return 'success'
@@ -909,6 +909,44 @@ def tiff_read_rpc_txt():
     return 'success'
 
 ###############################################################################
+# Test a very small TIFF with only 4 tags :
+# Magic: 0x4949 <little-endian> Version: 0x2a
+# Directory 0: offset 8 (0x8) next 0 (0)
+# ImageWidth (256) SHORT (3) 1<1>
+# ImageLength (257) SHORT (3) 1<1>
+# StripOffsets (273) LONG (4) 1<0>
+# StripByteCounts (279) LONG (4) 1<1>
+
+def tiff_small():
+
+    content = '\x49\x49\x2A\x00\x08\x00\x00\x00\x04\x00\x00\x01\x03\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x01\x03\x00\x01\x00\x00\x00\x01\x00\x00\x00\x11\x01\x04\x00\x01\x00\x00\x00\x00\x00\x00\x00\x17\x01\x04\x00\x01\x00\x00\x00\x01\x00\x00\x00'
+
+    # Create in-memory file
+    gdal.FileFromMemBuffer('/vsimem/small.tif', content)
+
+    ds = gdal.Open('/vsimem/small.tif')
+    if ds.GetRasterBand(1).Checksum() != 0:
+            print('Expected checksum = %d. Got = %d' % (0, ds.GetRasterBand(1).Checksum()))
+            return 'fail'
+
+    # Release memory associated to the in-memory file
+    gdal.Unlink('/vsimem/small.tif')
+
+    return 'success'
+
+###############################################################################
+# Test that we can workaround a DoS with
+
+def tiff_dos_strip_chop():
+
+    gdal.PushErrorHandler('CPLQuietErrorHandler')
+    ds = gdal.Open('data/tiff_dos_strip_chop.tif')
+    gdal.PopErrorHandler()
+    ds = None
+
+    return 'success'
+
+###############################################################################
 # Test reading a YCbCr JPEG all-in-one-strip multiband TIFF (#3259, #3894)
 
 def tiff_read_online_1():
@@ -918,15 +956,15 @@ def tiff_read_online_1():
 
     if not gdaltest.download_file('http://trac.osgeo.org/gdal/raw-attachment/ticket/3259/imgpb17.tif', 'imgpb17.tif'):
         return 'skip'
-        
+
     ds = gdal.Open('tmp/cache/imgpb17.tif')
     gdal.ErrorReset()
     cs = ds.GetRasterBand(1).Checksum()
     ds = None
-    
+
     if gdal.GetLastErrorMsg() != '':
         return 'fail'
-    
+
     if cs != 62628:
         print(cs)
         return 'fail'
@@ -1015,6 +1053,8 @@ gdaltest_list.append( (tiff_read_corrupted_gtiff) )
 gdaltest_list.append( (tiff_read_tag_without_null_byte) )
 gdaltest_list.append( (tiff_read_buggy_packbits) )
 gdaltest_list.append( (tiff_read_rpc_txt) )
+gdaltest_list.append( (tiff_small) )
+gdaltest_list.append( (tiff_dos_strip_chop) )
 gdaltest_list.append( (tiff_read_online_1) )
 gdaltest_list.append( (tiff_read_online_2) )
 
