@@ -262,7 +262,9 @@ class GTiffDataset : public GDALPamDataset
 
     char	*pszProjection;
     int         bLookedForProjection;
+    int         bLookedForMDAreaOrPoint;
 
+    void        LoadMDAreaOrPoint();
     void        LookForProjection();
 #ifdef ESRI_BUILD
     void        AdjustLinearUnit( short UOMLength );
@@ -2985,6 +2987,7 @@ GTiffDataset::GTiffDataset()
     dfNoDataValue = -9999.0;
     pszProjection = CPLStrdup("");
     bLookedForProjection = FALSE;
+    bLookedForMDAreaOrPoint = FALSE;
     bBase = TRUE;
     bCloseTIFFHandle = FALSE;
     bTreatAsRGBA = FALSE;
@@ -5612,6 +5615,50 @@ GDALDataset *GTiffDataset::Open( GDALOpenInfo * poOpenInfo )
     poDS->oOvManager.Initialize( poDS, pszFilename, poOpenInfo->papszSiblingFiles );
     
     return poDS;
+}
+
+/************************************************************************/
+/*                         LoadMDAreaOrPoint()                          */
+/************************************************************************/
+
+/* This is a light version of LookForProjection(), which saves the */
+/* potential costly cost of GTIFGetOGISDefn(), since we just need to */
+/* access to a raw GeoTIFF key, and not build the full projection object. */
+
+void GTiffDataset::LoadMDAreaOrPoint()
+{
+    if( bLookedForProjection || bLookedForMDAreaOrPoint ||
+        oGTiffMDMD.GetMetadataItem( GDALMD_AREA_OR_POINT ) != NULL )
+        return;
+
+    bLookedForMDAreaOrPoint = TRUE;
+
+    if (!SetDirectory())
+        return;
+
+    GTIF* hGTIF = GTIFNew(hTIFF);
+
+    if ( !hGTIF )
+    {
+        CPLError( CE_Warning, CPLE_AppDefined,
+                  "GeoTIFF tags apparently corrupt, they are being ignored." );
+    }
+    else
+    {
+        // Is this a pixel-is-point dataset?
+        short nRasterType;
+
+        if( GTIFKeyGet(hGTIF, GTRasterTypeGeoKey, &nRasterType,
+                       0, 1 ) == 1 )
+        {
+            if( nRasterType == (short) RasterPixelIsPoint )
+                oGTiffMDMD.SetMetadataItem( GDALMD_AREA_OR_POINT, GDALMD_AOP_POINT );
+            else
+                oGTiffMDMD.SetMetadataItem( GDALMD_AREA_OR_POINT, GDALMD_AOP_AREA );
+        }
+
+        GTIFFree( hGTIF );
+    }
 }
 
 /************************************************************************/
@@ -8796,8 +8843,7 @@ char **GTiffDataset::GetMetadata( const char * pszDomain )
     else if( pszDomain != NULL && EQUAL(pszDomain,"SUBDATASETS") )
         ScanDirectories();
 
-    /* FIXME ? Should we call LookForProjection() to load GDALMD_AREA_OR_POINT ? */
-    /* This can impact performances */
+    LoadMDAreaOrPoint(); /* to set GDALMD_AREA_OR_POINT */
 
     return oGTiffMDMD.GetMetadata( pszDomain );
 }
@@ -8852,7 +8898,7 @@ const char *GTiffDataset::GetMetadataItem( const char * pszName,
     else if( (pszDomain == NULL || EQUAL(pszDomain, "")) &&
         pszName != NULL && EQUAL(pszName, GDALMD_AREA_OR_POINT) )
     {
-        LookForProjection();
+        LoadMDAreaOrPoint(); /* to set GDALMD_AREA_OR_POINT */
     }
 
     return oGTiffMDMD.GetMetadataItem( pszName, pszDomain );
