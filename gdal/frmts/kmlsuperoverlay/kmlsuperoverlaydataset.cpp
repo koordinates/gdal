@@ -583,6 +583,44 @@ static void KMLSuperOverlayRecursiveUnlink( const char *pszName )
 }
 
 /************************************************************************/
+/*                         ContainsTransparency()                       */
+/************************************************************************/
+bool ContainsTransparency( int rxsize, int rysize, int rx, int ry, int dxsize, int dysize,
+                           GDALDataset* poSrcDs )
+{
+    int bands = poSrcDs->GetRasterCount();
+    int rowOffset = rysize/dysize;
+    int loopCount = rysize/rowOffset;
+    int hasNoData = 0;
+    GByte* pafScanline = new GByte[dxsize];
+
+    for (int band = 1; band <= bands; band++)
+    {
+        GDALRasterBand* poBand = poSrcDs->GetRasterBand(band);
+        int noDataValue = poBand->GetNoDataValue(&hasNoData);
+
+        if ( !( hasNoData || band == 4 ) )
+            continue;
+
+        for (int row = 0; row < loopCount; row++)
+        {
+            int yOffset = ry + row * rowOffset;
+            poBand->RasterIO( GF_Read, rx, yOffset, rxsize, rowOffset, pafScanline, dxsize, 1, GDT_Byte, 0, 0);
+            for (int i = 0; i < dxsize; i++)
+            {
+                if ( (band != 4 && pafScanline[i] == noDataValue ) || (band == 4 && pafScanline[i] == 0 ) )
+                {
+                    delete[] pafScanline;
+                    return true;
+                }
+            }
+        }
+    }
+    delete[] pafScanline;
+    return false;
+}
+
+/************************************************************************/
 /*                           CreateCopy()                               */
 /************************************************************************/
 
@@ -646,18 +684,33 @@ GDALDataset *KmlSuperOverlayCreateCopy( const char * pszFilename, GDALDataset *p
     }
 
     GDALDriver* poOutputTileDriver = NULL;
-    bool isJpegDriver = true;
+    GDALDriver* poJpegOutputTileDriver = NULL;
+    GDALDriver* poPngOutputTileDriver = NULL;
+    bool isAutoDriver = false;
+    bool isJpegDriver = false;
 
     const char* pszFormat = CSLFetchNameValueDef(papszOptions, "FORMAT", "JPEG");
-    if (EQUAL(pszFormat, "PNG"))
+    if (EQUAL(pszFormat, "AUTO"))
     {
-        isJpegDriver = false;
+        isAutoDriver = true;
+        poJpegOutputTileDriver = GetGDALDriverManager()->GetDriverByName("JPEG");
+        poPngOutputTileDriver = GetGDALDriverManager()->GetDriverByName("PNG");
+    }
+    else
+    {
+        poOutputTileDriver = GetGDALDriverManager()->GetDriverByName(pszFormat);
+        if (EQUAL(pszFormat, "JPEG"))
+        {
+            isJpegDriver = true;
+        }
     }
 
     GDALDriver* poMemDriver = GetGDALDriverManager()->GetDriverByName("MEM");
-    poOutputTileDriver = GetGDALDriverManager()->GetDriverByName(pszFormat);
 
-    if( poMemDriver == NULL || poOutputTileDriver == NULL)
+    if ( poMemDriver == NULL
+         || ( !isAutoDriver && poOutputTileDriver == NULL )
+         || ( isAutoDriver && (poJpegOutputTileDriver == NULL || poPngOutputTileDriver == NULL) )
+    )
     {
         CPLError( CE_Failure, CPLE_None,
                   "Image export driver was not found.." );
@@ -674,7 +727,7 @@ GDALDataset *KmlSuperOverlayCreateCopy( const char * pszFilename, GDALDataset *p
     double east = 0.0;
     double west = 0.0;
 
-    double	adfGeoTransform[6];
+    double adfGeoTransform[6];
 
     if( poSrcDS->GetGeoTransform(adfGeoTransform) == CE_None )
     {
@@ -810,6 +863,19 @@ GDALDataset *KmlSuperOverlayCreateCopy( const char * pszFilename, GDALDataset *p
                 zoomDir+= "/" + zoomStr.str();
                 VSIMkdir(zoomDir.c_str(), 0775);
         
+                if (isAutoDriver)
+                {
+                    if ( ContainsTransparency(rxsize, rysize, rx, ry, dxsize, dysize, poSrcDS) )
+                    {
+                        poOutputTileDriver = poPngOutputTileDriver;
+                        isJpegDriver = false;
+                    }
+                    else 
+                    {
+                        poOutputTileDriver = poJpegOutputTileDriver;
+                        isJpegDriver = true;
+                    }
+                }
 
                 zoomDir = zoomDir + "/" + ixStr.str();
                 VSIMkdir(zoomDir.c_str(), 0775);
@@ -1886,6 +1952,7 @@ void GDALRegister_KMLSUPEROVERLAY()
 "   <Option name='FORMAT' type='string-select' default='JPEG' description='Force of the tiles'>"
 "       <Value>PNG</Value>"
 "       <Value>JPEG</Value>"
+"       <Value>AUTO</Value>"
 "   </Option>"
 "   <Option name='FIX_ANTIMERIDIAN' type='boolean' description='Fix for images crossing the antimeridian causing errors in Google Earth' />"
 "</CreationOptionList>" );
