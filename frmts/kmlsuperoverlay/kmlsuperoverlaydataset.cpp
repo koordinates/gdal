@@ -693,10 +693,11 @@ KmlSuperOverlayCreateCopy(const char *pszFilename, GDALDataset *poSrcDS,
     int tilexsize;
     int tileysize;
     // Let the longer side determine the max zoom level and x/y tilesizes.
-    if (xsize >= ysize)
+    // tilesizes will be between 512 and 1024px
+    if ( xsize >= ysize )
     {
         double dtilexsize = xsize;
-        while (dtilexsize > 400)  // calculate x tile size
+        while (dtilexsize > 1024) //calculate x tile size
         {
             dtilexsize = dtilexsize / 2;
             maxzoom++;
@@ -707,7 +708,7 @@ KmlSuperOverlayCreateCopy(const char *pszFilename, GDALDataset *poSrcDS,
     else
     {
         double dtileysize = ysize;
-        while (dtileysize > 400)  // calculate y tile size
+        while (dtileysize > 1024) //calculate y tile size
         {
             dtileysize = dtileysize / 2;
             maxzoom++;
