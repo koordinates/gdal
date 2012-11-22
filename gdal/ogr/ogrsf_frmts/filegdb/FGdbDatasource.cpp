@@ -337,3 +337,167 @@ FGdbDataSource::CreateLayer( const char * pszLayerName,
 
     return pLayer;  
 }
+
+
+/************************************************************************/
+/*                   OGRFGdbSingleFeatureLayer                          */
+/************************************************************************/
+
+class OGRFGdbSingleFeatureLayer : public OGRLayer
+{
+  private:
+    char               *pszVal;
+    OGRFeatureDefn     *poFeatureDefn;
+    int                 iNextShapeId;
+
+  public:
+                        OGRFGdbSingleFeatureLayer( const char* pszLayerName,
+                                                   const char *pszVal );
+                        ~OGRFGdbSingleFeatureLayer();
+
+    virtual void        ResetReading() { iNextShapeId = 0; }
+    virtual OGRFeature *GetNextFeature();
+    virtual OGRFeatureDefn *GetLayerDefn() { return poFeatureDefn; }
+    virtual int         TestCapability( const char * ) { return FALSE; }
+};
+
+/************************************************************************/
+/*                    OGRFGdbSingleFeatureLayer()                       */
+/************************************************************************/
+
+OGRFGdbSingleFeatureLayer::OGRFGdbSingleFeatureLayer(const char* pszLayerName,
+                                                     const char *pszVal )
+{
+    poFeatureDefn = new OGRFeatureDefn( pszLayerName );
+    poFeatureDefn->Reference();
+    OGRFieldDefn oField( "FIELD_1", OFTString );
+    poFeatureDefn->AddFieldDefn( &oField );
+
+    iNextShapeId = 0;
+    this->pszVal = pszVal ? CPLStrdup(pszVal) : NULL;
+}
+
+/************************************************************************/
+/*                   ~OGRFGdbSingleFeatureLayer()                       */
+/************************************************************************/
+
+OGRFGdbSingleFeatureLayer::~OGRFGdbSingleFeatureLayer()
+{
+    if( poFeatureDefn != NULL )
+        poFeatureDefn->Release();
+    CPLFree(pszVal);
+}
+
+
+/************************************************************************/
+/*                           GetNextFeature()                           */
+/************************************************************************/
+
+OGRFeature * OGRFGdbSingleFeatureLayer::GetNextFeature()
+{
+    if (iNextShapeId != 0)
+        return NULL;
+
+    OGRFeature* poFeature = new OGRFeature(poFeatureDefn);
+    if (pszVal)
+        poFeature->SetField(0, pszVal);
+    poFeature->SetFID(iNextShapeId ++);
+    return poFeature;
+}
+
+/************************************************************************/
+/*                              ExecuteSQL()                            */
+/************************************************************************/
+
+OGRLayer * FGdbDataSource::ExecuteSQL( const char *pszSQLCommand,
+                                       OGRGeometry *poSpatialFilter,
+                                       const char *pszDialect )
+
+{
+    if ( pszDialect != NULL && EQUAL(pszDialect, "OGRSQL") )
+        return OGRDataSource::ExecuteSQL( pszSQLCommand,
+                                          poSpatialFilter,
+                                          pszDialect );
+
+/* -------------------------------------------------------------------- */
+/*      Special case GetLayerDefinition                                 */
+/* -------------------------------------------------------------------- */
+    if (EQUALN(pszSQLCommand, "GetLayerDefinition ", strlen("GetLayerDefinition ")))
+    {
+        FGdbLayer* poLayer = (FGdbLayer*) GetLayerByName(pszSQLCommand + strlen("GetLayerDefinition "));
+        if (poLayer)
+        {
+            char* pszVal = NULL;
+            poLayer->GetLayerXML(&pszVal);
+            OGRLayer* poRet = new OGRFGdbSingleFeatureLayer( "LayerDefinition", pszVal );
+            CPLFree(pszVal);
+            return poRet;
+        }
+        else
+            return NULL;
+    }
+
+/* -------------------------------------------------------------------- */
+/*      Special case GetLayerMetadata                                   */
+/* -------------------------------------------------------------------- */
+    if (EQUALN(pszSQLCommand, "GetLayerMetadata ", strlen("GetLayerMetadata ")))
+    {
+        FGdbLayer* poLayer = (FGdbLayer*) GetLayerByName(pszSQLCommand + strlen("GetLayerMetadata "));
+        if (poLayer)
+        {
+            char* pszVal = NULL;
+            poLayer->GetLayerMetadataXML(&pszVal);
+            OGRLayer* poRet = new OGRFGdbSingleFeatureLayer( "LayerMetadata", pszVal );
+            CPLFree(pszVal);
+            return poRet;
+        }
+        else
+            return NULL;
+    }
+
+    /* TODO: remove that workaround when the SDK has finally a decent */
+    /* SQL support ! */
+    if( EQUALN(pszSQLCommand, "SELECT ", 7) && pszDialect == NULL )
+    {
+        CPLDebug("FGDB", "Support for SELECT is known to be partially "
+                         "non-compliant with FileGDB SDK API v1.2.\n"
+                         "So for now, we use default OGR SQL engine. "
+                         "Explicitely specify -dialect FileGDB\n"
+                         "to use the SQL engine from the FileGDB SDK API");
+        return OGRDataSource::ExecuteSQL( pszSQLCommand,
+                                        poSpatialFilter,
+                                        pszDialect );
+    }
+
+/* -------------------------------------------------------------------- */
+/*      Run the SQL                                                     */
+/* -------------------------------------------------------------------- */
+    EnumRows* pEnumRows = new EnumRows;
+    long hr;
+    if (FAILED(hr = m_pGeodatabase->ExecuteSQL(
+                                StringToWString(pszSQLCommand), true, *pEnumRows)))
+    {
+        GDBErr(hr, CPLSPrintf("Failed at executing '%s'", pszSQLCommand));
+        delete pEnumRows;
+        return NULL;
+    }
+
+    if( EQUALN(pszSQLCommand, "SELECT ", 7) )
+    {
+        return new FGdbResultLayer(this, pszSQLCommand, pEnumRows);
+    }
+    else
+    {
+        delete pEnumRows;
+        return NULL;
+    }
+}
+
+/************************************************************************/
+/*                           ReleaseResultSet()                         */
+/************************************************************************/
+
+void FGdbDataSource::ReleaseResultSet( OGRLayer * poResultsSet )
+{
+    delete poResultsSet;
+}
