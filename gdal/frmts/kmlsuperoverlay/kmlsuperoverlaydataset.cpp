@@ -41,6 +41,8 @@
 #include "cpl_string.h"
 #include "cpl_conv.h"
 #include "cpl_vsi.h"
+#include "gdalwarper.h"
+#include "gdal_alg.h"
 #include "ogr_spatialref.h"
 #include "../vrt/gdal_vrt.h"
 #include "../vrt/vrtdataset.h"
@@ -53,136 +55,107 @@ using namespace std;
 void GenerateTiles(std::string filename, 
                    int zoom, int rxsize, 
                    int rysize, int ix, int iy, 
-                   int rx, int ry, int dxsize, 
-                   int dysize, int bands,
-                   GDALDataset* poSrcDs,
-                   GDALDriver* poOutputTileDriver, 
-                   GDALDriver* poMemDriver,
-                   bool isJpegDriver)
-{
-    GDALDataset* poTmpDataset = NULL;
-    GDALRasterBand* alphaBand = NULL;
-   
-    GByte* pafScanline = new GByte[dxsize];
-    bool* hadnoData = new bool[dxsize];
+                    int rx, int ry, int dxsize, 
+                    int dysize, int bands,
+                    GDALDataset* poSrcDs,
+                   GDALDriver* poOutputTileDriver,
+                    GDALDriver* poMemDriver,
+                   bool isJpegDriver,
+                   GDALResampleAlg eResampleAlg)
+ {
+     GDALDataset* poTmpDataset = NULL;
+ 
+     if (isJpegDriver && bands == 4)
+         bands = 3;
 
-    if (isJpegDriver && bands == 4)
-        bands = 3;
-   
-    poTmpDataset = poMemDriver->Create("", dxsize, dysize, bands, GDT_Byte, NULL);
-   
-    if (isJpegDriver == false)//Jpeg dataset only has one or three bands
+     poTmpDataset = poMemDriver->Create("", dxsize, dysize, bands, GDT_Byte, NULL);
+
+    double adfSrcGeoTransform[6];
+    double adfDstGeoTransform[6];
+    poSrcDs->GetGeoTransform(adfSrcGeoTransform);
+    adfDstGeoTransform[0] = adfSrcGeoTransform[0] + (rx * adfSrcGeoTransform[1]);
+    adfDstGeoTransform[3] = adfSrcGeoTransform[3] + (ry * adfSrcGeoTransform[5]);
+
+    adfDstGeoTransform[1] = adfSrcGeoTransform[1] * (rysize / dysize);
+    adfDstGeoTransform[5] = adfSrcGeoTransform[5] * (rxsize / dxsize);
+
+    adfDstGeoTransform[2] = adfSrcGeoTransform[2];
+    adfDstGeoTransform[4] = adfSrcGeoTransform[4];
+
+    GDALWarpOptions* psWarpOptions = GDALCreateWarpOptions();
+    psWarpOptions->hSrcDS = poSrcDs;
+    psWarpOptions->hDstDS = poTmpDataset;
+
+    psWarpOptions->nBandCount = bands;
+     if (isJpegDriver == false)//Jpeg dataset only has one or three bands
+     {
+         if (bands < 4)//add transparency to files with one band or three bands
+         {
+             poTmpDataset->AddBand(GDT_Byte);
+         }
+        psWarpOptions->nDstAlphaBand = poTmpDataset->GetRasterCount();
+     }
+ 
+    psWarpOptions->panSrcBands = (int *) CPLMalloc(sizeof(int) * psWarpOptions->nBandCount );
+    for (int i = 0; i < bands; i++)
+        psWarpOptions->panSrcBands[i] = i + 1;
+ 
+    psWarpOptions->panDstBands = (int *) CPLMalloc(sizeof(int) * psWarpOptions->nBandCount );
+    for (int i = 0; i < bands; i++)
+        psWarpOptions->panDstBands[i] = i + 1;
+ 
+    psWarpOptions->eResampleAlg = eResampleAlg;
+    psWarpOptions->eWorkingDataType = GDT_Byte;
+ 
+    psWarpOptions->pTransformerArg =
+        GDALCreateGenImgProjTransformer3(NULL, adfSrcGeoTransform, NULL, adfDstGeoTransform);
+ 
+    psWarpOptions->pfnTransformer = GDALGenImgProjTransform;
+ 
+    GDALWarpOperation oOperation;
+    oOperation.Initialize(psWarpOptions);
+    
+    oOperation.WarpRegion( 0, 0, dxsize, dysize, rx, ry, rxsize, rysize);
+ 
+    GDALDestroyGenImgProjTransformer( psWarpOptions->pTransformerArg );
+    GDALDestroyWarpOptions( psWarpOptions );
+ 
+    if ( !isJpegDriver )
     {
-        if (bands < 4)//add transparency to files with one band or three bands
-        {
-            poTmpDataset->AddBand(GDT_Byte);
-            alphaBand = poTmpDataset->GetRasterBand(poTmpDataset->GetRasterCount());
-        }
-    }
-
-    int rowOffset = rysize/dysize;
-    int loopCount = rysize/rowOffset;
-    for (int row = 0; row < loopCount; row++)
-    {
-        if (isJpegDriver == false)
-        {
-            for (int i = 0; i < dxsize; i++)
-            {
-                hadnoData[i] = false;
-            }
-        }
-
+        int hasNoData = 0;
+        GByte* pafScanline = new GByte[dxsize];
+        GByte* pafAlphaScanline = new GByte[dxsize];
+        GDALRasterBand* poAlphaBand = poTmpDataset->GetRasterBand(psWarpOptions->nDstAlphaBand);
+ 
         for (int band = 1; band <= bands; band++)
         {
-            GDALRasterBand* poBand = poSrcDs->GetRasterBand(band);
+            GDALRasterBand* poBand = poTmpDataset->GetRasterBand(band);
+            int noDataValue = poSrcDs->GetRasterBand(band)->GetNoDataValue(&hasNoData);
+ 
+            if ( !( hasNoData || band == 4 ) )
+                continue;
 
-            int hasNoData = 0;
-            bool isSigned = false;
-            double noDataValue = poBand->GetNoDataValue(&hasNoData);
-            const char* pixelType = poBand->GetMetadataItem("PIXELTYPE", "IMAGE_STRUCTURE");
-            if (pixelType)
-            {
-                if (strcmp(pixelType, "SIGNEDBYTE") == 0)
-                {
-                    isSigned = true; 
+            for (int row = 0; row < dysize; row++)
+             {
+                poBand->RasterIO( GF_Read, 0, row, dxsize, 1, pafScanline, dxsize, 1, GDT_Byte, 0, 0);
+                 for (int i = 0; i < dxsize; i++)
+                 {
+                    if ( (band != 4 && pafScanline[i] == noDataValue ) || (band == 4 && pafScanline[i] == 0 ) )
+                     {
+                        pafAlphaScanline[i] = 0;
+                     }
+                     else
+                     {
+                        pafAlphaScanline[i] = 255;
+                     }
                 }
-            }
-
-            GDALRasterBand* poBandtmp = NULL;
-            if (poTmpDataset)
-            {
-                poBandtmp = poTmpDataset->GetRasterBand(band);
-            }
-
-            int yOffset = ry + row * rowOffset;
-            bool bReadFailed = false;
-            if (poBand)
-            {
-                CPLErr errTest = 
-                    poBand->RasterIO( GF_Read, rx, yOffset, rxsize, rowOffset, pafScanline, dxsize, 1, GDT_Byte, 0, 0);
-
-                if ( errTest == CE_Failure )
-                {
-                    hasNoData = 1;
-                    bReadFailed = true;
-                }
-            }
-
-
-            //fill the true or false for hadnoData array if the source data has nodata value
-            if (isJpegDriver == false)
-            {
-                if (hasNoData == 1)
-                {
-                    for (int j = 0; j < dxsize; j++)
-                    {
-                        double v = pafScanline[j];
-                        double tmpv = v;
-                        if (isSigned)
-                        {
-                            tmpv -= 128;
-                        }
-                        if (tmpv == noDataValue || bReadFailed == true)
-                        {
-                            hadnoData[j] = true;
-                        }
-                    }
-                }
-            }
-
-            if (poBandtmp && bReadFailed == false)
-            {
-                poBandtmp->RasterIO(GF_Write, 0, row, dxsize, 1, pafScanline, dxsize, 1, GDT_Byte, 
-                                    0, 0);
-            }
-        } 
-
-        //fill the values for alpha band
-        if (isJpegDriver == false)
-        {
-            if (alphaBand)
-            {
-                for (int i = 0; i < dxsize; i++)
-                {
-                    if (hadnoData[i] == true)
-                    {
-                        pafScanline[i] = 0;
-                    }
-                    else
-                    {
-                        pafScanline[i] = 255;
-                    }
-                }    
-
-                alphaBand->RasterIO(GF_Write, 0, row, dxsize, 1, pafScanline, dxsize, 1, GDT_Byte, 
-                                    0, 0);
-            }
-        }
-    }
-
-    delete [] pafScanline;
-    delete [] hadnoData;
-
+ 
+                poAlphaBand->RasterIO( GF_Write, 0, row, dxsize, 1, pafAlphaScanline, dxsize, 1, GDT_Byte, 0, 0);
+             }
+         }
+        delete[] pafScanline;
+     }
+ 
     GDALDataset* outDs = poOutputTileDriver->CreateCopy(filename.c_str(), poTmpDataset, FALSE, NULL, NULL, NULL);
 
     GDALClose(poTmpDataset);
@@ -828,6 +801,23 @@ GDALDataset *KmlSuperOverlayCreateCopy( const char * pszFilename, GDALDataset *p
         return NULL;
     }
 
+    GDALResampleAlg eResampleAlg;
+    const char* pszResampleAlg = CSLFetchNameValueDef(papszOptions, "RESAMPLE", "NEAREST");
+    if (EQUAL(pszResampleAlg, "NEAREST"))
+        eResampleAlg = GRA_NearestNeighbour;
+    else if (EQUAL(pszResampleAlg, "BILINEAR"))
+        eResampleAlg = GRA_Bilinear;
+    else if (EQUAL(pszResampleAlg, "CUBIC"))
+        eResampleAlg = GRA_Cubic;
+    else if (EQUAL(pszResampleAlg, "CUBICSPLINE"))
+        eResampleAlg = GRA_CubicSpline;
+    else if (EQUAL(pszResampleAlg, "LANCZOS"))
+        eResampleAlg = GRA_Lanczos;
+    else
+    {
+        CPLError( CE_Failure, CPLE_None, "Resample algorith is invalid" );
+    }
+
     for (int zoom = maxzoom; zoom >= 0; --zoom)
     {
         int rmaxxsize = static_cast<int>(pow(2.0, (maxzoom-zoom)) * tilexsize);
@@ -892,7 +882,7 @@ GDALDataset *KmlSuperOverlayCreateCopy( const char * pszFilename, GDALDataset *p
                 }
 
                 GenerateTiles(filename, zoom, rxsize, rysize, ix, iy, rx, ry, dxsize, 
-                              dysize, bands, poSrcDS, poOutputTileDriver, poMemDriver, isJpegDriver);
+                              dysize, bands, poSrcDS, poOutputTileDriver, poMemDriver, isJpegDriver, eResampleAlg);
                 std::string childKmlfile = zoomDir + "/" + iyStr.str() + ".kml";
                 if (isKmz)
                 {
@@ -1955,6 +1945,13 @@ void GDALRegister_KMLSUPEROVERLAY()
 "       <Value>AUTO</Value>"
 "   </Option>"
 "   <Option name='FIX_ANTIMERIDIAN' type='boolean' description='Fix for images crossing the antimeridian causing errors in Google Earth' />"
+"   <Option name='RESAMPLE' type='string-select' default='NEAREST' description='Resmpling method when creating the tiles'>"
+"       <Value>NEAREST</Value>"
+"       <Value>BILINEAR</Value>"
+"       <Value>CUBIC</Value>"
+"       <Value>CUBICSPLINE</Value>"
+"       <Value>LANCZOS</Value>"
+"   </Option>"
 "</CreationOptionList>" );
 
         poDriver->SetMetadataItem( GDAL_DCAP_VIRTUALIO, "YES" );
