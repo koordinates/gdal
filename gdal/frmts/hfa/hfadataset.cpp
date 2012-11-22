@@ -4503,6 +4503,18 @@ HFADataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
         return NULL;
 
 /* -------------------------------------------------------------------- */
+/*      Does the source have a RAT for any of the bands?  If so,        */
+/*      copy it over.                                                   */
+/* -------------------------------------------------------------------- */
+    for( iBand = 0; iBand < nBandCount; iBand++ )
+    {
+        GDALRasterBand *poBand = poSrcDS->GetRasterBand( iBand+1 );
+
+        if( poBand->GetDefaultRAT() != NULL )
+            poDS->GetRasterBand(iBand+1)->SetDefaultRAT( poBand->GetDefaultRAT() );
+    }
+
+/* -------------------------------------------------------------------- */
 /*      Does the source have a PCT for any of the bands?  If so,        */
 /*      copy it over.                                                   */
 /* -------------------------------------------------------------------- */
