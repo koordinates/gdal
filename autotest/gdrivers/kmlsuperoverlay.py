@@ -37,12 +37,21 @@ from osgeo import gdal
 import gdaltest
 import pytest
 
+
+@pytest.fixture(autouse=True)
+def nuke_tmpdir():
+    for f in os.listdir('tmp'):
+        f = os.path.join('tmp', f)
+        if os.path.isdir(f):
+            shutil.rmtree(f)
+        else:
+            os.unlink(f)
+
 ###############################################################################
 # Test CreateCopy() to a KMZ file
 
 
 def test_kmlsuperoverlay_1():
-
     tst = gdaltest.GDALTest('KMLSUPEROVERLAY', 'small_world.tif', 1, 30111, options=['FORMAT=PNG'])
 
     return tst.testCreateCopy(new_filename='/vsimem/kmlout.kmz')
@@ -60,33 +69,22 @@ def test_kmlsuperoverlay_2():
 ###############################################################################
 # Test CreateCopy() to a KML file
 
-
 def test_kmlsuperoverlay_3():
-
     src_ds = gdal.Open('data/utm.tif')
     ds = gdal.GetDriverByName('KMLSUPEROVERLAY').CreateCopy('tmp/tmp.kml', src_ds)
     del ds
     src_ds = None
 
-    filelist = ['tmp/0/0/0.jpg',
-                'tmp/0/0/0.kml',
-                'tmp/1/0/0.jpg',
-                'tmp/1/0/0.kml',
-                'tmp/1/0/1.jpg',
-                'tmp/1/0/1.kml',
-                'tmp/1/1/0.jpg',
-                'tmp/1/1/0.kml',
-                'tmp/1/1/1.jpg',
-                'tmp/1/1/1.kml',
-                'tmp/tmp.kml']
+    # Kx: modified from upstream tests
+    # (since we've changed the kmlsuperoverlay target tile size to 1024px, we have less files)
+    filelist = [ 'tmp/0/0/0.jpg',
+                 'tmp/0/0/0.kml',
+                 'tmp/tmp.kml' ]
     for filename in filelist:
         try:
             os.remove(filename)
         except OSError:
             pytest.fail("Missing file: %s" % filename)
-
-    shutil.rmtree('tmp/0')
-    shutil.rmtree('tmp/1')
 
 ###############################################################################
 # Test overviews
@@ -144,13 +142,7 @@ def test_kmlsuperoverlay_4():
     ds = gdal.GetDriverByName('KMLSUPEROVERLAY').CreateCopy('/vsimem/kmlsuperoverlay_4.kmz', src_ds, options=['FORMAT=PNG', 'NAME=myname', 'DESCRIPTION=mydescription', 'ALTITUDE=10', 'ALTITUDEMODE=absolute'])
     assert ds.GetMetadataItem('NAME') == 'myname'
     assert ds.GetMetadataItem('DESCRIPTION') == 'mydescription'
-    if ds.GetRasterBand(1).GetOverviewCount() != 1:
-        ds = None
-        src_ds = None
-        gdal.Unlink("/vsimem/src.vrt")
-        gdal.Unlink("/vsimem/kmlsuperoverlay_4.kmz")
-        pytest.fail()
-    if ds.GetRasterBand(1).GetOverview(0).Checksum() != 30111:
+    if ds.GetRasterBand(1).GetOverviewCount() != 0:
         ds = None
         src_ds = None
         gdal.Unlink("/vsimem/src.vrt")
@@ -186,7 +178,6 @@ def test_kmlsuperoverlay_4():
 
 
 def test_kmlsuperoverlay_5():
-
     try:
         from xml.etree import ElementTree
     except ImportError:
@@ -228,10 +219,6 @@ def test_kmlsuperoverlay_5():
     files = [
         'tmp/tmp.kml',
         'tmp/0/0/0.kml',
-        'tmp/1/0/0.kml',
-        'tmp/1/0/1.kml',
-        'tmp/1/1/0.kml',
-        'tmp/1/1/1.kml',
     ]
 
     for f in files:
@@ -243,16 +230,11 @@ def test_kmlsuperoverlay_5():
             assert float(east) >= float(west), \
                 ('East is less than west in LatLonAltBox %s, (%s < %s)' % (f, east, west))
 
-    shutil.rmtree('tmp/0')
-    shutil.rmtree('tmp/1')
-    os.remove('tmp/tmp.kml')
 
 ###############################################################################
 # Test raster KML with alternate structure (such as http://opentopo.sdsc.edu/files/Haiti/NGA_Haiti_LiDAR2.kmz))
 
-
 def test_kmlsuperoverlay_6():
-
     ds = gdal.Open('data/kmlimage.kmz')
     assert ds.GetProjectionRef().find('WGS_1984') >= 0
     got_gt = ds.GetGeoTransform()
@@ -272,7 +254,6 @@ def test_kmlsuperoverlay_6():
 
 
 def test_kmlsuperoverlay_7():
-
     ds = gdal.Open('data/small_world.kml')
     assert ds.GetProjectionRef().find('WGS_1984') >= 0
     got_gt = ds.GetGeoTransform()
@@ -306,9 +287,8 @@ def test_kmlsuperoverlay_single_overlay_document_folder_pct():
 
 
 def test_kmlsuperoverlay_8():
-
     # a large raster with actual data on each end and blank space in between
-    src_ds = gdal.Open("""<VRTDataset rasterXSize="2048" rasterYSize="512">
+    src_ds = gdal.Open("""<VRTDataset rasterXSize="4096" rasterYSize="1024">
   <SRS>GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9108"]],AUTHORITY["EPSG","4326"]]</SRS>
   <GeoTransform>  0,  0.01,  0,  0,  0, 0.01</GeoTransform>
   <VRTRasterBand dataType="Byte" band="1">
@@ -318,14 +298,14 @@ def test_kmlsuperoverlay_8():
       <SourceBand>1</SourceBand>
       <SourceProperties RasterXSize="512" RasterYSize="512" DataType="Byte" BlockXSize="512" BlockYSize="16" />
       <SrcRect xOff="0" yOff="0" xSize="512" ySize="512" />
-      <DstRect xOff="0" yOff="0" xSize="512" ySize="512" />
+      <DstRect xOff="0" yOff="0" xSize="1024" ySize="1024" />
     </SimpleSource>
     <SimpleSource>
       <SourceFilename relativeToVRT="1">data/utm.tif</SourceFilename>
       <SourceBand>1</SourceBand>
       <SourceProperties RasterXSize="512" RasterYSize="512" DataType="Byte" BlockXSize="512" BlockYSize="16" />
       <SrcRect xOff="0" yOff="0" xSize="512" ySize="512" />
-      <DstRect xOff="1536" yOff="0" xSize="512" ySize="512" />
+      <DstRect xOff="1536" yOff="0" xSize="1024" ySize="1024" />
     </SimpleSource>
   </VRTRasterBand>
   <VRTRasterBand dataType="Byte" band="2">
@@ -335,14 +315,14 @@ def test_kmlsuperoverlay_8():
       <SourceBand>1</SourceBand>
       <SourceProperties RasterXSize="512" RasterYSize="512" DataType="Byte" BlockXSize="512" BlockYSize="16" />
       <SrcRect xOff="0" yOff="0" xSize="512" ySize="512" />
-      <DstRect xOff="0" yOff="0" xSize="512" ySize="512" />
+      <DstRect xOff="0" yOff="0" xSize="1024" ySize="1024" />
     </SimpleSource>
     <SimpleSource>
       <SourceFilename relativeToVRT="1">data/utm.tif</SourceFilename>
       <SourceBand>1</SourceBand>
       <SourceProperties RasterXSize="512" RasterYSize="512" DataType="Byte" BlockXSize="512" BlockYSize="16" />
       <SrcRect xOff="0" yOff="0" xSize="512" ySize="512" />
-      <DstRect xOff="1536" yOff="0" xSize="512" ySize="512" />
+      <DstRect xOff="1536" yOff="0" xSize="1024" ySize="1024" />
     </SimpleSource>
   </VRTRasterBand>
   <VRTRasterBand dataType="Byte" band="3">
@@ -352,14 +332,14 @@ def test_kmlsuperoverlay_8():
       <SourceBand>1</SourceBand>
       <SourceProperties RasterXSize="512" RasterYSize="512" DataType="Byte" BlockXSize="512" BlockYSize="16" />
       <SrcRect xOff="0" yOff="0" xSize="512" ySize="512" />
-      <DstRect xOff="0" yOff="0" xSize="512" ySize="512" />
+      <DstRect xOff="0" yOff="0" xSize="1024" ySize="1024" />
     </SimpleSource>
     <SimpleSource>
       <SourceFilename relativeToVRT="1">data/utm.tif</SourceFilename>
       <SourceBand>1</SourceBand>
       <SourceProperties RasterXSize="512" RasterYSize="512" DataType="Byte" BlockXSize="512" BlockYSize="16" />
       <SrcRect xOff="0" yOff="0" xSize="512" ySize="512" />
-      <DstRect xOff="1536" yOff="0" xSize="512" ySize="512" />
+      <DstRect xOff="1536" yOff="0" xSize="1024" ySize="1024" />
     </SimpleSource>
   </VRTRasterBand>
   <VRTRasterBand dataType="Byte" band="4">
@@ -369,7 +349,7 @@ def test_kmlsuperoverlay_8():
       <SourceBand>1</SourceBand>
       <SourceProperties RasterXSize="512" RasterYSize="512" DataType="Byte" BlockXSize="512" BlockYSize="16" />
       <SrcRect xOff="0" yOff="0" xSize="512" ySize="512" />
-      <DstRect xOff="0" yOff="0" xSize="512" ySize="512" />
+      <DstRect xOff="0" yOff="0" xSize="1024" ySize="1024" />
       <ScaleOffset>255</ScaleOffset>
       <ScaleRatio>0</ScaleRatio>
     </ComplexSource>
@@ -378,7 +358,7 @@ def test_kmlsuperoverlay_8():
       <SourceBand>1</SourceBand>
       <SourceProperties RasterXSize="512" RasterYSize="512" DataType="Byte" BlockXSize="512" BlockYSize="16" />
       <SrcRect xOff="0" yOff="0" xSize="512" ySize="512" />
-      <DstRect xOff="1536" yOff="0" xSize="512" ySize="512" />
+      <DstRect xOff="1536" yOff="0" xSize="1024" ySize="1024" />
       <ScaleOffset>255</ScaleOffset>
       <ScaleRatio>0</ScaleRatio>
     </ComplexSource>
@@ -389,15 +369,11 @@ def test_kmlsuperoverlay_8():
     src_ds = None
 
     assert set(os.listdir('tmp/0/0')) == set(('0.kml', '0.png'))
-    assert (set(os.listdir('tmp/3/1')) == set(('0.jpg', '0.kml', '1.jpg', '1.kml', '2.jpg', '2.kml', '3.jpg', '3.kml',
-                                          '4.jpg', '4.kml', '5.jpg', '5.kml', '6.jpg', '6.kml', '7.jpg', '7.kml',)))
-    assert set(os.listdir('tmp/3/2')) == set()
-
-    shutil.rmtree('tmp/0')
-    shutil.rmtree('tmp/1')
-    shutil.rmtree('tmp/2')
-    shutil.rmtree('tmp/3')
-    os.remove('tmp/tmp.kml')
+    # Kx: modified from upstream tests
+    # (since we've changed the kmlsuperoverlay target tile size to 1024px, we have less files)
+    assert set(os.listdir('tmp/2/0')) == set(('0.jpg', '0.kml', '1.jpg', '1.kml', '2.jpg', '2.kml', '3.jpg', '3.kml',))
+    # dir should be empty - 2/3 is entirely transparent so we skip generating files.
+    assert set(os.listdir('tmp/2/3')) == set()
 
 ###############################################################################
 # Cleanup
