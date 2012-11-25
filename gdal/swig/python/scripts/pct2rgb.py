@@ -1,25 +1,25 @@
 #!/usr/bin/env python
 #******************************************************************************
 #  $Id$
-# 
+#
 #  Name:     pct2rgb
 #  Project:  GDAL Python Interface
 #  Purpose:  Utility to convert palletted images into RGB (or RGBA) images.
 #  Author:   Frank Warmerdam, warmerdam@pobox.com
-# 
+#
 #******************************************************************************
 #  Copyright (c) 2001, Frank Warmerdam
-# 
+#
 #  Permission is hereby granted, free of charge, to any person obtaining a
 #  copy of this software and associated documentation files (the "Software"),
 #  to deal in the Software without restriction, including without limitation
 #  the rights to use, copy, modify, merge, publish, distribute, sublicense,
 #  and/or sell copies of the Software, and to permit persons to whom the
 #  Software is furnished to do so, subject to the following conditions:
-# 
+#
 #  The above copyright notice and this permission notice shall be included
 #  in all copies or substantial portions of the Software.
-# 
+#
 #  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 #  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 #  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
@@ -97,7 +97,7 @@ while i < len(argv):
 
 if dst_filename is None:
     Usage()
-    
+
 # ----------------------------------------------------------------------------
 # Open source file
 
@@ -119,15 +119,16 @@ if dst_driver is None:
 # ----------------------------------------------------------------------------
 # Build color table.
 
-lookup = [ Numeric.arrayrange(256), 
-           Numeric.arrayrange(256), 
-           Numeric.arrayrange(256), 
-           Numeric.ones(256)*255 ]
-
 ct = src_band.GetRasterColorTable()
 
+ct_size = max(256, ct.GetCount())
+lookup = [Numeric.arrayrange(ct_size),
+          Numeric.arrayrange(ct_size),
+          Numeric.arrayrange(ct_size),
+          Numeric.ones(ct_size) * 255]
+
 if ct is not None:
-    for i in range(min(256,ct.GetCount())):
+    for i in range(ct_size):
         entry = ct.GetColorEntry(i)
         for c in range(4):
             lookup[c][i] = entry[c]
@@ -155,7 +156,7 @@ if src_ds.GetGCPCount() > 0:
     tif_ds.SetGCPs( src_ds.GetGCPs(), src_ds.GetGCPProjection() )
 
 # ----------------------------------------------------------------------------
-# Do the processing one scanline at a time. 
+# Do the processing one scanline at a time.
 
 progress( 0.0 )
 for iY in range(src_ds.RasterYSize):
@@ -168,7 +169,7 @@ for iY in range(src_ds.RasterYSize):
         tif_ds.GetRasterBand(iBand+1).WriteArray(dst_data,0,iY)
 
     progress( (iY+1.0) / src_ds.RasterYSize )
-    
+
 
 tif_ds = None
 
