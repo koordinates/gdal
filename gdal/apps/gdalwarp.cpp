@@ -1325,6 +1325,7 @@ GDALWarpCreateOutput( char **papszSrcFiles, const char *pszFilename,
     GDALDatasetH hDstDS;
     void *hTransformArg;
     GDALColorTableH hCT = NULL;
+    GDALRasterAttributeTableH hRAT = NULL;
     double dfWrkMinX=0, dfWrkMaxX=0, dfWrkMinY=0, dfWrkMaxY=0;
     double dfWrkResX=0, dfWrkResY=0;
     int nDstBandCount = 0;
@@ -1399,6 +1400,21 @@ GDALWarpCreateOutput( char **papszSrcFiles, const char *pszFilename,
 
         if( eDT == GDT_Unknown )
             eDT = GDALGetRasterDataType(GDALGetRasterBand(hSrcDS,1));
+
+/* -------------------------------------------------------------------- */
+/*      If we are processing the first file, and it has a raster        */
+/*      attribute table, then we will copy it to the destination file.  */
+/* -------------------------------------------------------------------- */
+        if( iSrc == 0 )
+        {
+            hRAT = GDALGetDefaultRAT( GDALGetRasterBand(hSrcDS,1) );
+            if( hRAT != NULL )
+            {
+                if( !bQuiet )
+                    printf( "Copying raster attribute table from %s to new file.\n",
+                            papszSrcFiles[iSrc] );
+            }
+        }
 
 /* -------------------------------------------------------------------- */
 /*      If we are processing the first file, and it has a color         */
@@ -1775,6 +1791,14 @@ GDALWarpCreateOutput( char **papszSrcFiles, const char *pszFilename,
         GDALSetRasterColorInterpretation( 
             GDALGetRasterBand( hDstDS, nDstBandCount ), 
             GCI_AlphaBand );
+    }
+
+/* -------------------------------------------------------------------- */
+/*      Copy the raster attribute table, if required.                              */
+/* -------------------------------------------------------------------- */
+    if( hRAT != NULL )
+    {
+        GDALSetDefaultRAT( GDALGetRasterBand(hDstDS,1), hRAT );
     }
 
 /* -------------------------------------------------------------------- */
