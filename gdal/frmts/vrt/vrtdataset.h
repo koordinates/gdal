@@ -33,6 +33,7 @@
 #include "gdal_priv.h"
 #include "gdal_pam.h"
 #include "gdal_vrt.h"
+#include "gdal_rat.h"
 #include "cpl_hash_set.h"
 
 int VRTApplyMetadata( CPLXMLNode *, GDALMajorObject * );
@@ -245,6 +246,8 @@ class CPL_DLL VRTRasterBand : public GDALRasterBand
 
     GDALColorInterp eColorInterp;
 
+    GDALRasterAttributeTable *poDefaultRAT;
+
     char           *pszUnitType;
     char           **papszCategoryNames;
     
@@ -328,6 +331,10 @@ class CPL_DLL VRTRasterBand : public GDALRasterBand
     virtual int         CloseDependentDatasets();
 
     virtual int         IsSourcedRasterBand() { return FALSE; }
+
+    virtual const GDALRasterAttributeTable *GetDefaultRAT();
+    virtual CPLErr SetDefaultRAT( const GDALRasterAttributeTable * );
+
 };
 
 /************************************************************************/

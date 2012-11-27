@@ -1331,6 +1331,7 @@ static void CopyBandInfo( GDALRasterBand * poSrcBand, GDALRasterBand * poDstBand
         CSLDestroy(papszMetadataNew);
     }
 
+    poDstBand->SetDefaultRAT( poSrcBand->GetDefaultRAT() );
     poDstBand->SetColorTable( poSrcBand->GetColorTable() );
     poDstBand->SetColorInterpretation(poSrcBand->GetColorInterpretation());
     if( strlen(poSrcBand->GetDescription()) > 0 )
