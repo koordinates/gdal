@@ -8183,18 +8183,6 @@ GTiffDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
     }
 
 /* -------------------------------------------------------------------- */
-/*      Does the source have a RAT for any of the bands?  If so,        */
-/*      copy it over.                                                   */
-/* -------------------------------------------------------------------- */
-    for( iBand = 0; iBand < nBands; iBand++ )
-    {
-        GDALRasterBand *poBand = poSrcDS->GetRasterBand( iBand+1 );
-
-        if( poBand->GetDefaultRAT() != NULL )
-            poDS->GetRasterBand(iBand+1)->SetDefaultRAT( poBand->GetDefaultRAT() );
-    }
-
-/* -------------------------------------------------------------------- */
 /*      Second chance : now that we have a PAM dataset, it is possible  */
 /*      to write metadata that we couldn't be writen as TIFF tag        */
 /* -------------------------------------------------------------------- */

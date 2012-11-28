@@ -1012,6 +1012,20 @@ int main( int argc, char ** argv )
         }
 
 /* -------------------------------------------------------------------- */
+/*      Warns if the file has a RAT and something more                  */
+/*      complicated than nearest neighbour resampling is asked          */
+/* -------------------------------------------------------------------- */
+ 
+        if ( eResampleAlg != GRA_NearestNeighbour &&
+             GDALGetDefaultRAT(GDALGetRasterBand(hSrcDS, 1)) != NULL)
+        {
+            if( !bQuiet )
+                fprintf( stderr, "Warning: Input file %s has a raster attribute table, which will likely "
+                        "lead to bad results when using a resampling method other than "
+                        "nearest neighbour.\n", papszSrcFiles[iSrc] );
+        }
+
+/* -------------------------------------------------------------------- */
 /*      Do we have a source alpha band?                                 */
 /* -------------------------------------------------------------------- */
         if( GDALGetRasterColorInterpretation( 

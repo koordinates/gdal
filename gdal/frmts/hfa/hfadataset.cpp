@@ -4510,8 +4510,11 @@ HFADataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
     {
         GDALRasterBand *poBand = poSrcDS->GetRasterBand( iBand+1 );
 
-        if( poBand->GetDefaultRAT() != NULL )
-            poDS->GetRasterBand(iBand+1)->SetDefaultRAT( poBand->GetDefaultRAT() );
+        const GDALRasterAttributeTable *poRAT = poBand->GetDefaultRAT();
+        if (poRAT != NULL)
+        {
+            poDS->GetRasterBand(iBand+1)->SetDefaultRAT(poRAT);
+        }
     }
 
 /* -------------------------------------------------------------------- */
