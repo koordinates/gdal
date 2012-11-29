@@ -1198,6 +1198,32 @@ CPLErr HFARasterBand::SetColorTable( GDALColorTable * poCTable )
 /* -------------------------------------------------------------------- */
     int nColors = poCTable->GetColorEntryCount();
 
+
+/* -------------------------------------------------------------------- */
+/*      If we already have a non-empty RAT set and it's smaller than    */
+/*      the colour table, and all the trailing CT entries are the same, */
+/*      truncate the colour table. Helps when RATs travel via GTiff.    */
+/* -------------------------------------------------------------------- */
+    const GDALRasterAttributeTable *poRAT = GetDefaultRAT();
+    if (poRAT != NULL && poRAT->GetRowCount() > 0 && poRAT->GetRowCount() < nColors)
+    {
+        bool match = true;
+        const GDALColorEntry *color1 = poCTable->GetColorEntry(poRAT->GetRowCount());
+        for (int i=poRAT->GetRowCount()+1; match && i<nColors; i++)
+        {
+            const GDALColorEntry *color2 = poCTable->GetColorEntry(i);
+            match = (color1->c1 == color2->c1
+                        && color1->c2 == color2->c2
+                        && color1->c3 == color2->c3
+                        && color1->c4 == color2->c4 );
+        }
+        if (match)
+        {
+            CPLDebug( "HFA", "SetColorTable: Truncating PCT size (%d) to RAT size (%d)", nColors, poRAT->GetRowCount() );
+            nColors = poRAT->GetRowCount();
+        }
+    }
+
     double *padfRed, *padfGreen, *padfBlue, *padfAlpha;
 
     padfRed   = (double *) CPLMalloc(sizeof(double) * nColors);
@@ -1490,7 +1516,15 @@ HFARasterBand::GetDefaultHistogram( double *pdfMin, double *pdfMax,
 CPLErr HFARasterBand::SetDefaultRAT( const GDALRasterAttributeTable * poRAT )
 
 {
-    return WriteNamedRAT( "Descriptor_Table", poRAT );
+    if (CPLErr r = WriteNamedRAT( "Descriptor_Table", poRAT ))
+        return r;
+
+    if (poDefaultRAT != NULL)
+    {
+        delete poDefaultRAT;
+    }
+    poDefaultRAT = ReadNamedRAT( "Descriptor_Table" );
+    return CE_None;
 }
 
 /************************************************************************/
