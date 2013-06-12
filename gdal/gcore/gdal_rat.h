@@ -70,6 +70,8 @@ private:
     double dfRow0Min;
     double dfBinSize;
 
+    GDALRATTableType eTableType;
+
     void  AnalyseColumns();
     int   bColumnsAnalysed;
     int   nMinCol;
@@ -118,6 +120,9 @@ public:
     CPLErr        SetLinearBinning( double dfRow0Min, double dfBinSize );
     int           GetLinearBinning( double *pdfRow0Min, double *pdfBinSize ) const;
 
+    CPLErr        SetTableType(const GDALRATTableType eInTableType);
+    GDALRATTableType GetTableType() const;
+
     CPLXMLNode   *Serialize() const;
     CPLErr        XMLInit( CPLXMLNode *, const char * );
 
@@ -125,6 +130,8 @@ public:
     GDALColorTable *TranslateToColorTable( int nEntryCount = -1 );
     
     void          DumpReadable( FILE * = NULL );
+
+    void          RemoveStatistics();
 };
 
 #endif /* ndef GDAL_RAT_H_INCLUDED */

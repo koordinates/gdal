@@ -1510,6 +1510,7 @@ static void CopyBandInfo( GDALRasterBand * poSrcBand, GDALRasterBand * poDstBand
     if (bCanCopyStatsMetadata)
     {
         poDstBand->SetMetadata( poSrcBand->GetMetadata() );
+        poDstBand->SetDefaultRAT( poSrcBand->GetDefaultRAT() );
     }
     else
     {
@@ -1522,6 +1523,16 @@ static void CopyBandInfo( GDALRasterBand * poSrcBand, GDALRasterBand * poDstBand
         }
         poDstBand->SetMetadata( papszMetadataNew );
         CSLDestroy(papszMetadataNew);
+        
+        // we need to strip histogram data from the source RAT
+        if (poSrcBand->GetDefaultRAT())
+        {
+            GDALRasterAttributeTable *poNewRAT = poSrcBand->GetDefaultRAT()->Clone();
+            poNewRAT->RemoveStatistics();
+            poDstBand->SetDefaultRAT( poNewRAT );
+            // since SetDefaultRAT copies the RAT data we need to delete our original
+            delete poNewRAT;
+        }
     }
 
     poDstBand->SetColorTable( poSrcBand->GetColorTable() );
