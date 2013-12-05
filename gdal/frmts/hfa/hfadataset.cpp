@@ -2666,7 +2666,32 @@ CPLErr HFARasterBand::SetColorTable( GDALColorTable *poCTable )
     }
 
     // Write out the colortable, and update the configuration.
-    const int nColors = poCTable->GetColorEntryCount();
+    int nColors = poCTable->GetColorEntryCount();
+
+    /* -------------------------------------------------------------------- */
+    /*      If we already have a non-empty RAT set and it's smaller than    */
+    /*      the colour table, and all the trailing CT entries are the same, */
+    /*      truncate the colour table. Helps when RATs travel via GTiff.    */
+    /* -------------------------------------------------------------------- */
+    const GDALRasterAttributeTable *poRAT = GetDefaultRAT();
+    if (poRAT != NULL && poRAT->GetRowCount() > 0 && poRAT->GetRowCount() < nColors)
+    {
+        bool match = true;
+        const GDALColorEntry *color1 = poCTable->GetColorEntry(poRAT->GetRowCount());
+        for (int i=poRAT->GetRowCount()+1; match && i<nColors; i++)
+        {
+            const GDALColorEntry *color2 = poCTable->GetColorEntry(i);
+            match = (color1->c1 == color2->c1
+                        && color1->c2 == color2->c2
+                        && color1->c3 == color2->c3
+                        && color1->c4 == color2->c4 );
+        }
+        if (match)
+        {
+            CPLDebug( "HFA", "SetColorTable: Truncating PCT size (%d) to RAT size (%d)", nColors, poRAT->GetRowCount() );
+            nColors = poRAT->GetRowCount();
+        }
+    }
 
     double *padfRed =
         static_cast<double *>(CPLMalloc(sizeof(double) * nColors));
