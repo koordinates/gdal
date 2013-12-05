@@ -35,6 +35,7 @@
 #include "gdal_priv.h"
 #include "cpl_minixml.h"
 #include <map>
+#include <vector>
 
 CPL_C_START
 void CPL_DLL GDALRegister_KMLSUPEROVERLAY(void);
@@ -87,6 +88,12 @@ class KmlSuperOverlayReadDataset : public GDALDataset
     static int          Identify(GDALOpenInfo *);
     static GDALDataset *Open(const char* pszFilename, KmlSuperOverlayReadDataset* poParent = NULL, int nRec = 0);
     static GDALDataset *Open(GDALOpenInfo *);
+    
+    static const int KMLSO_ContainsOpaquePixels = 0x1;
+    static const int KMLSO_ContainsTransparentPixels = 0x2;
+    static const int KMLSO_ContainsPartiallyTransparentPixels = 0x4;
+
+    static int DetectTransparency( int rxsize, int rysize, int rx, int ry, int dxsize, int dysize, GDALDataset* poSrcDs );
 
     virtual CPLErr GetGeoTransform( double * );
     virtual const char *GetProjectionRef();
