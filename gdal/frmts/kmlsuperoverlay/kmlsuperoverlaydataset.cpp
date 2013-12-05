@@ -291,7 +291,8 @@ int  GenerateChildKml(std::string filename,
                       std::string fileExt,
                       bool fixAntiMeridian,
                       const char* pszAltitude,
-                      const char* pszAltitudeMode)
+                      const char* pszAltitudeMode,
+                      std::vector<std::pair<int,int> > childTiles)
 {
     double tnorth = south + zoomypixel *((iy + 1)*dysize);
     double tsouth = south + zoomypixel *(iy*dysize);
@@ -438,50 +439,47 @@ int  GenerateChildKml(std::string filename,
     }
     VSIFPrintfL(fp, "\t\t</GroundOverlay>\n");
 
-    for (unsigned int i = 0; i < xchildren.size(); i++)
+    for ( std::vector<std::pair<int,int> >::iterator it=childTiles.begin() ; it < childTiles.end(); it++ )
     {
-        int cx = xchildren[i];
-        for (unsigned int j = 0; j < ychildern.size(); j++)
+        int cx = (*it).first;
+        int cy = (*it).second;
+
+        double cnorth = south + zoomypixel/2 *((cy + 1)*dysize);
+        double csouth = south + zoomypixel/2 *(cy*dysize);
+        double ceast = west + zoomxpixel/2*((cx+1)*dxsize);
+        double cwest = west + zoomxpixel/2*cx*dxsize;
+
+        if (poTransform)
         {
-            int cy = ychildern[j];
-
-            double cnorth = south + zoomypixel/2 *((cy + 1)*dysize);
-            double csouth = south + zoomypixel/2 *(cy*dysize);
-            double ceast = west + zoomxpixel/2*((cx+1)*dxsize);
-            double cwest = west + zoomxpixel/2*cx*dxsize;
-
-            if (poTransform)
-            {
-                poTransform->Transform(1, &cwest, &csouth);
-                poTransform->Transform(1, &ceast, &cnorth);
-            }
-
-            if ( fixAntiMeridian && ceast < cwest )
-            {
-                ceast += 360;
-            }
-
-            VSIFPrintfL(fp, "\t\t<NetworkLink>\n");
-            VSIFPrintfL(fp, "\t\t\t<name>%d/%d/%d%s</name>\n", zoom+1, cx, cy, fileExt.c_str());
-            VSIFPrintfL(fp, "\t\t\t<Region>\n");
-            VSIFPrintfL(fp, "\t\t\t\t<LatLonAltBox>\n");
-            VSIFPrintfL(fp, "\t\t\t\t\t<north>%f</north>\n", cnorth);
-            VSIFPrintfL(fp, "\t\t\t\t\t<south>%f</south>\n", csouth);
-            VSIFPrintfL(fp, "\t\t\t\t\t<east>%f</east>\n", ceast);
-            VSIFPrintfL(fp, "\t\t\t\t\t<west>%f</west>\n", cwest);
-            VSIFPrintfL(fp, "\t\t\t\t</LatLonAltBox>\n");
-            VSIFPrintfL(fp, "\t\t\t\t<Lod>\n");
-            VSIFPrintfL(fp, "\t\t\t\t\t<minLodPixels>128</minLodPixels>\n");
-            VSIFPrintfL(fp, "\t\t\t\t\t<maxLodPixels>-1</maxLodPixels>\n");
-            VSIFPrintfL(fp, "\t\t\t\t</Lod>\n");
-            VSIFPrintfL(fp, "\t\t\t</Region>\n");
-            VSIFPrintfL(fp, "\t\t\t<Link>\n");
-            VSIFPrintfL(fp, "\t\t\t\t<href>../../%d/%d/%d.kml</href>\n", zoom+1, cx, cy);
-            VSIFPrintfL(fp, "\t\t\t\t<viewRefreshMode>onRegion</viewRefreshMode>\n");
-            VSIFPrintfL(fp, "\t\t\t\t<viewFormat/>\n");
-            VSIFPrintfL(fp, "\t\t\t</Link>\n");
-            VSIFPrintfL(fp, "\t\t</NetworkLink>\n");
+            poTransform->Transform(1, &cwest, &csouth);
+            poTransform->Transform(1, &ceast, &cnorth);
         }
+
+        if ( fixAntiMeridian && ceast < cwest )
+        {
+            ceast += 360;
+        }
+
+        VSIFPrintfL(fp, "\t\t<NetworkLink>\n");
+        VSIFPrintfL(fp, "\t\t\t<name>%d/%d/%d%s</name>\n", zoom+1, cx, cy, fileExt.c_str());
+        VSIFPrintfL(fp, "\t\t\t<Region>\n");
+        VSIFPrintfL(fp, "\t\t\t\t<Lod>\n");
+        VSIFPrintfL(fp, "\t\t\t\t\t<minLodPixels>128</minLodPixels>\n");
+        VSIFPrintfL(fp, "\t\t\t\t\t<maxLodPixels>-1</maxLodPixels>\n");
+        VSIFPrintfL(fp, "\t\t\t\t</Lod>\n");
+        VSIFPrintfL(fp, "\t\t\t\t<LatLonAltBox>\n");
+        VSIFPrintfL(fp, "\t\t\t\t\t<north>%f</north>\n", cnorth);
+        VSIFPrintfL(fp, "\t\t\t\t\t<south>%f</south>\n", csouth);
+        VSIFPrintfL(fp, "\t\t\t\t\t<east>%f</east>\n", ceast);
+        VSIFPrintfL(fp, "\t\t\t\t\t<west>%f</west>\n", cwest);
+        VSIFPrintfL(fp, "\t\t\t\t</LatLonAltBox>\n");
+        VSIFPrintfL(fp, "\t\t\t</Region>\n");
+        VSIFPrintfL(fp, "\t\t\t<Link>\n");
+        VSIFPrintfL(fp, "\t\t\t\t<href>../../%d/%d/%d.kml</href>\n", zoom+1, cx, cy);
+        VSIFPrintfL(fp, "\t\t\t\t<viewRefreshMode>onRegion</viewRefreshMode>\n");
+        VSIFPrintfL(fp, "\t\t\t\t<viewFormat/>\n");
+        VSIFPrintfL(fp, "\t\t\t</Link>\n");
+        VSIFPrintfL(fp, "\t\t</NetworkLink>\n");
     }
 
     VSIFPrintfL(fp, "\t</Document>\n");
@@ -489,6 +487,66 @@ int  GenerateChildKml(std::string filename,
     VSIFCloseL(fp);
     
     return TRUE;
+}
+
+/************************************************************************/
+/*                         DetectTransparency()                         */
+/************************************************************************/
+int KmlSuperOverlayReadDataset::DetectTransparency( int rxsize, int rysize, int rx, int ry, int dxsize, int dysize, GDALDataset* poSrcDs )
+{
+    int bands = poSrcDs->GetRasterCount();
+    int rowOffset = rysize/dysize;
+    int loopCount = rysize/rowOffset;
+    int hasNoData = 0;
+    GByte* pafScanline = new GByte[dxsize];
+
+    int flags = 0;
+    for (int band = 1; band <= bands; band++)
+    {
+        GDALRasterBand* poBand = poSrcDs->GetRasterBand(band);
+        int noDataValue = poBand->GetNoDataValue(&hasNoData);
+
+        if (band < 4 && hasNoData) {
+            for (int row = 0; row < loopCount; row++)
+            {
+                int yOffset = ry + row * rowOffset;
+                poBand->RasterIO( GF_Read, rx, yOffset, rxsize, rowOffset, pafScanline, dxsize, 1, GDT_Byte, 0, 0);
+                for (int i = 0; i < dxsize; i++)
+                {
+                    if (pafScanline[i] == noDataValue)
+                    {
+                        flags |= KMLSO_ContainsTransparentPixels;
+                    } else {
+                        flags |= KMLSO_ContainsOpaquePixels;
+                    }
+                }
+                // shortcut - if there are both types of pixels, flags is as full as it's going to get.
+                // so no point continuing, skip to the next band
+                if ((flags & KMLSO_ContainsTransparentPixels) && (flags & KMLSO_ContainsOpaquePixels)) {
+                    break;
+                }
+            }
+        } else if (band == 4) {
+            for (int row = 0; row < loopCount; row++)
+            {
+                int yOffset = ry + row * rowOffset;
+                poBand->RasterIO( GF_Read, rx, yOffset, rxsize, rowOffset, pafScanline, dxsize, 1, GDT_Byte, 0, 0);
+                for (int i = 0; i < dxsize; i++)
+                {
+                    if (pafScanline[i] == 255)
+                    {
+                        flags |= KMLSO_ContainsOpaquePixels;
+                    } else if (pafScanline[i] == 0) {
+                        flags |= KMLSO_ContainsTransparentPixels;
+                    } else {
+                        flags |= KMLSO_ContainsPartiallyTransparentPixels;
+                    }
+                }
+            }
+        }
+    }
+    delete[] pafScanline;
+    return flags;
 }
 
 /************************************************************************/
@@ -560,18 +618,33 @@ GDALDataset *KmlSuperOverlayCreateCopy( const char * pszFilename, GDALDataset *p
     }
 
     GDALDriver* poOutputTileDriver = NULL;
-    bool isJpegDriver = true;
+    GDALDriver* poJpegOutputTileDriver = NULL;
+    GDALDriver* poPngOutputTileDriver = NULL;
+    bool isAutoDriver = false;
+    bool isJpegDriver = false;
 
     const char* pszFormat = CSLFetchNameValueDef(papszOptions, "FORMAT", "JPEG");
-    if (EQUAL(pszFormat, "PNG"))
+    if (EQUAL(pszFormat, "AUTO"))
     {
-        isJpegDriver = false;
+        isAutoDriver = true;
+        poJpegOutputTileDriver = GetGDALDriverManager()->GetDriverByName("JPEG");
+        poPngOutputTileDriver = GetGDALDriverManager()->GetDriverByName("PNG");
+    }
+    else
+    {
+        poOutputTileDriver = GetGDALDriverManager()->GetDriverByName(pszFormat);
+        if (EQUAL(pszFormat, "JPEG"))
+        {
+            isJpegDriver = true;
+        }
     }
 
     GDALDriver* poMemDriver = GetGDALDriverManager()->GetDriverByName("MEM");
-    poOutputTileDriver = GetGDALDriverManager()->GetDriverByName(pszFormat);
 
-    if( poMemDriver == NULL || poOutputTileDriver == NULL)
+    if ( poMemDriver == NULL
+         || ( !isAutoDriver && poOutputTileDriver == NULL )
+         || ( isAutoDriver && (poJpegOutputTileDriver == NULL || poPngOutputTileDriver == NULL) )
+    )
     {
         CPLError( CE_Failure, CPLE_None,
                   "Image export driver was not found.." );
@@ -591,7 +664,7 @@ GDALDataset *KmlSuperOverlayCreateCopy( const char * pszFilename, GDALDataset *p
     double east = 0.0;
     double west = 0.0;
 
-    double	adfGeoTransform[6];
+    double adfGeoTransform[6];
 
     if( poSrcDS->GetGeoTransform(adfGeoTransform) == CE_None )
     {
@@ -751,6 +824,9 @@ GDALDataset *KmlSuperOverlayCreateCopy( const char * pszFilename, GDALDataset *p
         nTotalTiles += xloop * yloop;
     }
 
+    // {(z, x, y): [(childx, childy), ...], ...}
+    std::map<std::pair<int,int>,std::vector<std::pair<int,int> > > childTiles;
+    std::map<std::pair<int,int>,std::vector<std::pair<int,int> > > currentTiles;
     for (zoom = maxzoom; zoom >= 0; --zoom)
     {
         int rmaxxsize = static_cast<int>(pow(2.0, (maxzoom-zoom)) * tilexsize);
@@ -792,6 +868,37 @@ GDALDataset *KmlSuperOverlayCreateCopy( const char * pszFilename, GDALDataset *p
                 std::stringstream iyStr;
                 iyStr << iy;
 
+                std::string zoomDir = outDir;
+                zoomDir+= "/" + zoomStr.str();
+                VSIMkdir(zoomDir.c_str(), 0775);
+        
+                if (isAutoDriver)
+                {
+                    int flags = KmlSuperOverlayReadDataset::DetectTransparency(rxsize, rysize, rx, ry, dxsize, dysize, poSrcDS);
+                    if ( flags & (KmlSuperOverlayReadDataset::KMLSO_ContainsPartiallyTransparentPixels | KmlSuperOverlayReadDataset::KMLSO_ContainsTransparentPixels) )
+                    {
+                        if (!(flags & (KmlSuperOverlayReadDataset::KMLSO_ContainsPartiallyTransparentPixels | KmlSuperOverlayReadDataset::KMLSO_ContainsOpaquePixels))) {
+                            // don't bother creating empty tiles
+                            continue;
+                        }
+                        poOutputTileDriver = poPngOutputTileDriver;
+                        isJpegDriver = false;
+                    }
+                    else 
+                    {
+                        poOutputTileDriver = poJpegOutputTileDriver;
+                        isJpegDriver = true;
+                    }
+                }
+                std::pair<int,int> xyKey = std::make_pair(ix / 2, iy / 2);
+                if (!currentTiles.count(xyKey)) {
+                    currentTiles[xyKey] = std::vector<std::pair<int,int> >();
+                }
+                currentTiles[xyKey].push_back(std::make_pair(ix, iy));
+
+                zoomDir = zoomDir + "/" + ixStr.str();
+                VSIMkdir(zoomDir.c_str(), 0775);
+
                 std::string fileExt = ".jpg";
                 if (isJpegDriver == false)
                 {
@@ -824,15 +931,17 @@ GDALDataset *KmlSuperOverlayCreateCopy( const char * pszFilename, GDALDataset *p
                     zoomypix = 1;
                 }
 
+                xyKey = std::make_pair(ix, iy);
                 GenerateChildKml(childKmlfile, zoom, ix, iy, zoomxpix, zoomypix, 
-                                 dxsize, dysize, tmpSouth, adfGeoTransform[0],
-                                 xsize, ysize, maxzoom, poTransform, fileExt, fixAntiMeridian,
-                                 pszAltitude, pszAltitudeMode);
-
+                             dxsize, dysize, tmpSouth, adfGeoTransform[0],
+                             xsize, ysize, maxzoom, poTransform, fileExt, fixAntiMeridian,
+                             pszAltitude, pszAltitudeMode, childTiles[xyKey]);
                 nTileCount ++;
                 pfnProgress(1.0 * nTileCount / nTotalTiles, "", pProgressData);
             }
         }
+        childTiles = currentTiles;
+        currentTiles.clear();
     }
 
     OGRCoordinateTransformation::DestroyCT( poTransform );
@@ -2462,6 +2571,7 @@ void GDALRegister_KMLSUPEROVERLAY()
 "   <Option name='FORMAT' type='string-select' default='JPEG' description='Format of the tiles'>"
 "       <Value>PNG</Value>"
 "       <Value>JPEG</Value>"
+"       <Value>AUTO</Value>"
 "   </Option>"
 "   <Option name='FIX_ANTIMERIDIAN' type='boolean' description='Fix for images crossing the antimeridian causing errors in Google Earth' />"
 "</CreationOptionList>" );
