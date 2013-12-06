@@ -2460,7 +2460,7 @@ JP2KAKCreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
             dfXRes *= 100.0;
             dfYRes *= 100.0;
 
-            if( dfXRes != 0.0 && dfYRes != 0.0 )
+            if( dfXRes != 0.0 && dfYRes != 0.0 && isfinite(dfXRes) && isfinite(dfYRes))
             {
                 if( fabs(dfXRes/dfYRes - 1.0) > 0.00001 )
                     res.init( dfYRes/dfXRes );
