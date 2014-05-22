@@ -110,6 +110,7 @@ void VRTRasterBand::Initialize( int nXSize, int nYSize )
     m_dfNoDataValue = -10000.0;
     m_poColorTable = NULL;
     m_eColorInterp = GCI_Undefined;
+    m_poDefaultRAT = NULL;
 
     m_pszUnitType = NULL;
     m_papszCategoryNames = NULL;
@@ -133,6 +134,9 @@ VRTRasterBand::~VRTRasterBand()
     if( m_poColorTable != NULL )
         delete m_poColorTable;
 
+    if( m_poDefaultRAT != NULL )
+        delete m_poDefaultRAT;
+
     CSLDestroy( m_papszCategoryNames );
     if( m_psSavedHistograms != NULL )
         CPLDestroyXMLNode( m_psSavedHistograms );
@@ -150,6 +154,7 @@ VRTRasterBand::~VRTRasterBand()
 CPLErr VRTRasterBand::CopyCommonInfoFrom( GDALRasterBand * poSrcBand )
 
 {
+    SetDefaultRAT( poSrcBand->GetDefaultRAT() );
     SetMetadata( poSrcBand->GetMetadata() );
     const char* pszNBits = poSrcBand->GetMetadataItem("NBITS", "IMAGE_STRUCTURE");
     SetMetadataItem( "NBITS", pszNBits, "IMAGE_STRUCTURE" );
@@ -1209,4 +1214,33 @@ int VRTRasterBand::CloseDependentDatasets()
     return FALSE;
 }
 
+
+/************************************************************************/
+/*                           GetDefaultRAT()                            */
+/************************************************************************/
+
+GDALRasterAttributeTable *VRTRasterBand::GetDefaultRAT()
+{
+    return m_poDefaultRAT;
+}
+
+/************************************************************************/
+/*                           SetDefaultRAT()                            */
+/************************************************************************/
+
+CPLErr VRTRasterBand::SetDefaultRAT(const GDALRasterAttributeTable *poRAT)
+{
+    if( m_poDefaultRAT != NULL )
+    {
+        delete m_poDefaultRAT;
+        m_poDefaultRAT = NULL;
+    }
+
+    if( poRAT == NULL )
+        m_poDefaultRAT = NULL;
+    else
+        m_poDefaultRAT = poRAT->Clone();
+
+    return CE_None;
+}
 /*! @endcond */

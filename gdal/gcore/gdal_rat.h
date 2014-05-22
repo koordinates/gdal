@@ -237,6 +237,9 @@ public:
      */
     virtual int           ChangesAreWrittenToFile() = 0;
 
+    virtual CPLErr        SetTableType(const GDALRATTableType eInTableType) = 0;
+    virtual GDALRATTableType GetTableType() const = 0;
+
     virtual CPLErr        ValuesIO( GDALRWFlag eRWFlag, int iField,
                                     int iStartRow, int iLength,
                                     double *pdfData);
@@ -272,6 +275,7 @@ public:
     virtual GDALColorTable *TranslateToColorTable( int nEntryCount = -1 );
 
     virtual void          DumpReadable( FILE * = NULL );
+    virtual void          RemoveStatistics() = 0;
 };
 
 /************************************************************************/
@@ -309,6 +313,8 @@ class CPL_DLL GDALDefaultRasterAttributeTable : public GDALRasterAttributeTable
     int bLinearBinning;  // TODO(schwehr): Can this be a bool?
     double dfRow0Min;
     double dfBinSize;
+
+    GDALRATTableType eTableType;
 
     void  AnalyseColumns();
     int   bColumnsAnalysed;  // TODO(schwehr): Can this be a bool?
@@ -358,6 +364,11 @@ class CPL_DLL GDALDefaultRasterAttributeTable : public GDALRasterAttributeTable
                                             double dfBinSize ) CPL_OVERRIDE;
     virtual int           GetLinearBinning( double *pdfRow0Min,
                                             double *pdfBinSize ) const CPL_OVERRIDE;
+
+    virtual CPLErr        SetTableType(const GDALRATTableType eInTableType) CPL_OVERRIDE;
+    virtual GDALRATTableType GetTableType() const CPL_OVERRIDE;
+
+    virtual void          RemoveStatistics() CPL_OVERRIDE;
 };
 
 #endif /* ndef GDAL_RAT_H_INCLUDED */

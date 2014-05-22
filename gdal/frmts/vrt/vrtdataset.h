@@ -37,6 +37,7 @@
 #include "gdal_pam.h"
 #include "gdal_priv.h"
 #include "gdal_vrt.h"
+#include "gdal_rat.h"
 
 #include <map>
 #include <vector>
@@ -381,6 +382,8 @@ class CPL_DLL VRTRasterBand : public GDALRasterBand
 
     GDALColorInterp m_eColorInterp;
 
+    GDALRasterAttributeTable *m_poDefaultRAT;
+
     char           *m_pszUnitType;
     char           **m_papszCategoryNames;
 
@@ -466,6 +469,9 @@ class CPL_DLL VRTRasterBand : public GDALRasterBand
 
     virtual int         IsSourcedRasterBand() { return FALSE; }
     virtual int         IsPansharpenRasterBand() { return FALSE; }
+
+    virtual GDALRasterAttributeTable *GetDefaultRAT() CPL_OVERRIDE;
+    virtual CPLErr SetDefaultRAT( const GDALRasterAttributeTable * ) CPL_OVERRIDE;
 };
 
 /************************************************************************/
