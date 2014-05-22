@@ -54,6 +54,7 @@ GDALWarpCreateOutput( char **papszSrcFiles, const char *pszFilename,
                       void ** phTransformArg,
                       GDALDatasetH* phSrcDS,
                       int bSetColorInterpretation,
+                      GDALResampleAlg eResampleAlg,
                       char** papszOpenOptions );
 
 static void 
@@ -1009,6 +1010,7 @@ int main( int argc, char ** argv )
                                        papszTO, &papszCreateOptions, 
                                        eOutputType, &hUniqueTransformArg,
                                        &hUniqueSrcDS, bSetColorInterpretation,
+                                       eResampleAlg,
                                        papszOpenOptions);
         bCreateOutput = TRUE;
 
@@ -1725,6 +1727,7 @@ GDALWarpCreateOutput( char **papszSrcFiles, const char *pszFilename,
                       void ** phTransformArg,
                       GDALDatasetH* phSrcDS,
                       int bSetColorInterpretation,
+                      GDALResampleAlg eResampleAlg,
                       char** papszOpenOptions)
 
 
@@ -1733,6 +1736,7 @@ GDALWarpCreateOutput( char **papszSrcFiles, const char *pszFilename,
     GDALDatasetH hDstDS;
     void *hTransformArg;
     GDALColorTableH hCT = NULL;
+    GDALRasterAttributeTableH hRAT = NULL;
     double dfWrkMinX=0, dfWrkMaxX=0, dfWrkMinY=0, dfWrkMaxY=0;
     double dfWrkResX=0, dfWrkResY=0;
     int nDstBandCount = 0;
@@ -1814,6 +1818,35 @@ GDALWarpCreateOutput( char **papszSrcFiles, const char *pszFilename,
 
         if( eDT == GDT_Unknown )
             eDT = GDALGetRasterDataType(GDALGetRasterBand(hSrcDS,1));
+
+/* -------------------------------------------------------------------- */
+/*      If we are processing the first file, and it has a raster        */
+/*      attribute table, then we will copy it to the destination file.  */
+/* -------------------------------------------------------------------- */
+        if( iSrc == 0 )
+        {
+            hRAT = GDALGetDefaultRAT( GDALGetRasterBand(hSrcDS,1) );
+            if( hRAT != NULL )
+            {
+                if ( eResampleAlg != GRA_NearestNeighbour && eResampleAlg != GRA_Mode && 
+                    GDALRATGetTableType(hRAT) == GRTT_THEMATIC )
+                {
+                    if( !bQuiet )
+                    {
+                        fprintf( stderr, "Warning: Input file %s has a thematic RAT, which will likely lead "
+                            "to bad results when using a resampling method other than nearest neighbour "
+                            "or mode so we are discarding it.\n", papszSrcFiles[iSrc] );
+                    }
+                    hRAT = NULL;
+                }
+                else
+                {
+                    if( !bQuiet )
+                        printf( "Copying raster attribute table from %s to new file.\n",
+                              papszSrcFiles[iSrc] );
+                }
+            }
+        }
 
 /* -------------------------------------------------------------------- */
 /*      If we are processing the first file, and it has a color         */
@@ -2210,6 +2243,14 @@ GDALWarpCreateOutput( char **papszSrcFiles, const char *pszFilename,
         GDALSetRasterColorInterpretation( 
             GDALGetRasterBand( hDstDS, nDstBandCount ), 
             GCI_AlphaBand );
+    }
+
+/* -------------------------------------------------------------------- */
+/*      Copy the raster attribute table, if required.                   */
+/* -------------------------------------------------------------------- */
+    if( hRAT != NULL )
+    {
+        GDALSetDefaultRAT( GDALGetRasterBand(hDstDS,1), hRAT );
     }
 
 /* -------------------------------------------------------------------- */
