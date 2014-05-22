@@ -877,9 +877,7 @@ CPLErr HFAEntry::SetFieldValue( const char * pszFieldPath,
 /*      from a file, or instantiating a new node.                       */
 /* -------------------------------------------------------------------- */
     LoadData();
-    if( MakeData() == NULL 
-        || pabyData == NULL
-        || poType == NULL )
+    if( MakeData() == NULL || pabyData == NULL || poType == NULL )
     {
         CPLAssert( FALSE );
         return CE_Failure;

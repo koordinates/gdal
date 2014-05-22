@@ -494,6 +494,47 @@ GDALRATGetLinearBinning( GDALRasterAttributeTableH hRAT,
 }
 
 /************************************************************************/
+/*                        GDALRATGetTableType()                         */
+/************************************************************************/
+
+/**
+ * \brief Get Rat Table Type
+ *
+ * @since GDAL 2.0
+ *
+ * This function is the same as the C++ method GDALRasterAttributeTable::GetTableType()
+ */
+GDALRATTableType CPL_STDCALL 
+GDALRATGetTableType( GDALRasterAttributeTableH hRAT)
+{
+    VALIDATE_POINTER1( hRAT, "GDALRATGetTableType", GRTT_THEMATIC );
+
+    return ((GDALDefaultRasterAttributeTable *) hRAT)->GetTableType();
+}
+
+/************************************************************************/
+/*                        GDALRATSetTableType()                         */
+/************************************************************************/
+
+/**
+ * \brief Set RAT Table Type
+ *
+ * @since GDAL 2.0
+ *
+ * This function is the same as the C++ method GDALRasterAttributeTable::SetTableType()
+ */
+CPLErr CPL_STDCALL 
+GDALRATSetTableType( GDALRasterAttributeTableH hRAT, 
+                         const GDALRATTableType eInTableType )
+
+{
+    VALIDATE_POINTER1( hRAT, "GDALRATSetTableType", CE_Failure );
+
+    return ((GDALDefaultRasterAttributeTable *) hRAT)->SetTableType(
+        eInTableType );
+}
+
+/************************************************************************/
 /*                             Serialize()                              */
 /************************************************************************/
 
@@ -526,6 +567,15 @@ CPLXMLNode *GDALRasterAttributeTable::Serialize() const
             CPLCreateXMLNode( psTree, CXT_Attribute, "BinSize" ), 
             CXT_Text, szValue );
     }
+
+/* -------------------------------------------------------------------- */
+/*      Store table type                                                */
+/* -------------------------------------------------------------------- */
+    sprintf( szValue, "%d", GetTableType() );
+    CPLCreateXMLNode( 
+        CPLCreateXMLNode( psTree, CXT_Attribute, "TableType" ), 
+        CXT_Text, szValue );
+
 
 /* -------------------------------------------------------------------- */
 /*      Define each column.                                             */
@@ -612,6 +662,17 @@ CPLErr GDALRasterAttributeTable::XMLInit( CPLXMLNode *psTree,
         SetLinearBinning( atof(CPLGetXMLValue( psTree, "Row0Min","" )), 
                           atof(CPLGetXMLValue( psTree, "BinSize","" )) );
     }
+
+/* -------------------------------------------------------------------- */
+/*      Table Type                                                      */
+/* -------------------------------------------------------------------- */
+    if( CPLGetXMLValue( psTree, "TableType", NULL ) )
+    {
+        int iTableType = atoi(CPLGetXMLValue( psTree, "TableType","" ));
+        if (iTableType >= GRTT_THEMATIC && iTableType <= GRTT_ATHEMATIC)
+            SetTableType( (GDALRATTableType) iTableType );
+    }
+
 
 /* -------------------------------------------------------------------- */
 /*      Column definitions                                              */
@@ -931,6 +992,7 @@ GDALDefaultRasterAttributeTable::GDALDefaultRasterAttributeTable()
     bLinearBinning = FALSE;
     dfRow0Min = -0.5;
     dfBinSize = 1.0;
+    eTableType = GRTT_THEMATIC;
     nRowCount = 0;
 }
 
@@ -1760,6 +1822,55 @@ int GDALDefaultRasterAttributeTable::GetLinearBinning( double *pdfRow0Min,
 }
 
 /************************************************************************/
+/*                          GetTableType()                              */
+/************************************************************************/
+
+/**
+ * \brief Get RAT Table Type
+ *
+ * Returns whether table type is thematic or athematic
+ *
+ * This method is the same as the C function GDALRATGetTableType().
+ *
+ * @since GDAL 2.0
+ *
+ * @return GRTT_THEMATIC or GRTT_ATHEMATIC
+ */
+
+GDALRATTableType GDALDefaultRasterAttributeTable::GetTableType() const
+{
+    return eTableType;
+}
+
+/************************************************************************/
+/*                          SetTableType()                              */
+/************************************************************************/
+
+/**
+ * \brief Set RAT Table Type
+ *
+ * Set whether table type is thematic or athematic
+ *
+ * This method is the same as the C function GDALRATSetTableType().
+ * @param dfRow0MinIn the lower bound (pixel value) of the first category.
+ *
+ * @param eTableType the new RAT table type (GRTT_THEMATIC or GRTT_ATHEMATIC)
+ *
+ * @since GDAL 2.0
+ *
+ * @return CE_None on success or CE_Failure on failure.
+ */
+
+CPLErr GDALDefaultRasterAttributeTable::SetTableType(const GDALRATTableType eInTableType)
+{
+    if (eInTableType < GRTT_THEMATIC || eInTableType > GRTT_ATHEMATIC)
+        return CE_Failure;
+    eTableType = eInTableType;
+    return CE_None;
+}
+
+
+/************************************************************************/
 /*                            CreateColumn()                            */
 /************************************************************************/
 
@@ -1813,10 +1924,80 @@ GDALDefaultRasterAttributeTable *GDALDefaultRasterAttributeTable::Clone() const
  * This function is the same as the C++ method GDALRasterAttributeTable::Clone()
  */
 GDALRasterAttributeTableH CPL_STDCALL 
-GDALRATClone( GDALRasterAttributeTableH hRAT )
+GDALRATClone( const GDALRasterAttributeTableH hRAT )
 
 {
     VALIDATE_POINTER1( hRAT, "GDALRATClone", NULL );
 
     return ((GDALRasterAttributeTable *) hRAT)->Clone();
+}
+
+/************************************************************************/
+/*                            RemoveStatistics()                        */
+/************************************************************************/
+
+/**
+ * \brief Remove Statistics from RAT
+ *
+ * Remove statistics (such as histogram) from the RAT. This is important
+ * if these have been invalidated, for example by cropping the image.
+ *
+ * This method is the same as the C function GDALRATRemoveStatistics().
+ *
+ * @since GDAL 2.0
+ */
+
+void GDALDefaultRasterAttributeTable::RemoveStatistics()
+
+{
+    // since we are storing the fields in a vector it will generally
+    // be faster to create a new vector and replace the old one
+    // rather than actually erasing columns.
+    std::vector<GDALRasterAttributeField> aoNewFields;
+    for (std::vector<GDALRasterAttributeField>::const_iterator itr = aoFields.begin(); 
+            itr != aoFields.end(); ++itr)
+    {
+        switch (itr->eUsage) 
+        {
+            case GFU_PixelCount:
+            case GFU_Min:
+            case GFU_Max:
+            case GFU_RedMin:
+            case GFU_GreenMin:
+            case GFU_BlueMin:
+            case GFU_AlphaMin:
+            case GFU_RedMax:
+            case GFU_GreenMax:
+            case GFU_BlueMax:
+            case GFU_AlphaMax:
+            {
+                break;
+            }
+
+            default:
+                if (itr->sName != "Histogram")
+                    aoNewFields.push_back(*itr);
+        }
+    }
+    aoFields = aoNewFields;
+}
+
+/************************************************************************/
+/*                        GDALRATDumpReadable()                         */
+/************************************************************************/
+
+/**
+ * \brief Remove Statistics from RAT
+ *
+ * This function is the same as the C++ method GDALRasterAttributeTable::RemoveStatistics()
+ *
+ * @since GDAL 2.0
+ */
+void CPL_STDCALL 
+GDALRATRemoveStatistics( GDALRasterAttributeTableH hRAT )
+
+{
+    VALIDATE_POINTER0( hRAT, "GDALRATRemoveStatistics" );
+
+    ((GDALRasterAttributeTable *) hRAT)->RemoveStatistics();
 }
