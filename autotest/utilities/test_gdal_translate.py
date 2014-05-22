@@ -614,7 +614,7 @@ def test_gdal_translate_22():
         return 'fail'
 
     if 'STATISTICS_HISTOBINVALUES' in md:
-        gdaltest.post_reason( 'did not expected a STATISTICS_MINIMUM value.' )
+        gdaltest.post_reason( 'did not expected a STATISTICS_HISTOBINVALUES value.' )
         return 'fail'
 
     return 'success'
@@ -859,6 +859,97 @@ def test_gdal_translate_30():
 
     return 'success'
 
+
+
+###############################################################################
+# Test RAT is copied from hfa to gtiff - continuous/athematic
+
+def test_gdal_translate_31():
+    if test_cli_utilities.get_gdal_translate_path() is None:
+        return 'skip'
+
+    gdaltest.runexternal(test_cli_utilities.get_gdal_translate_path() + ' -of gtiff data/onepixelcontinuous.img tmp/test_gdal_translate_31.tif')
+
+    ds = gdal.Open('tmp/test_gdal_translate_31.tif')
+    if ds is None:
+        return 'fail'
+
+    rat = ds.GetRasterBand(1).GetDefaultRAT()
+    if not rat:
+        gdaltest.post_reason('Did not get RAT')
+        return 'fail'
+
+    if not rat.GetRowCount() == 256:
+        gdaltest.post_reason('RAT has incorrect row count')
+        return 'fail'
+
+    if rat.GetTableType() != 1:
+        gdaltest.post_reason('RAT not athematic')
+        return 'fail'
+    rat = None
+    ds = None
+
+    return 'success'
+
+###############################################################################
+# Test RAT is copied from hfa to gtiff - thematic
+
+def test_gdal_translate_32():
+    if test_cli_utilities.get_gdal_translate_path() is None:
+        return 'skip'
+
+    gdaltest.runexternal(test_cli_utilities.get_gdal_translate_path() + ' -q -of gtiff data/onepixelthematic.img tmp/test_gdal_translate_32.tif')
+
+    ds = gdal.Open('tmp/test_gdal_translate_32.tif')
+    if ds is None:
+        return 'fail'
+
+    rat = ds.GetRasterBand(1).GetDefaultRAT()
+    if not rat:
+        gdaltest.post_reason('Did not get RAT')
+        return 'fail'
+
+    if not rat.GetRowCount() == 256:
+        gdaltest.post_reason('RAT has incorrect row count')
+        return 'fail'
+
+    if rat.GetTableType() != 0:
+        gdaltest.post_reason('RAT not thematic')
+        return 'fail'
+    rat = None
+    ds = None
+
+    return 'success'
+
+# Test RAT is copied round trip back to hfa
+
+def test_gdal_translate_33():
+    if test_cli_utilities.get_gdal_translate_path() is None:
+        return 'skip'
+
+    gdaltest.runexternal(test_cli_utilities.get_gdal_translate_path() + ' -q -of hfa tmp/test_gdal_translate_32.tif tmp/test_gdal_translate_33.img')
+
+    ds = gdal.Open('tmp/test_gdal_translate_33.img')
+    if ds is None:
+        return 'fail'
+
+    rat = ds.GetRasterBand(1).GetDefaultRAT()
+    if not rat:
+        gdaltest.post_reason('Did not get RAT')
+        return 'fail'
+
+    if not rat.GetRowCount() == 256:
+        gdaltest.post_reason('RAT has incorrect row count')
+        return 'fail'
+
+    if rat.GetTableType() != 0:
+        gdaltest.post_reason('RAT not thematic')
+        return 'fail'
+    rat = None
+    ds = None
+
+    return 'success'
+
 ###############################################################################
 # Test -projwin_srs option
 
@@ -1086,7 +1177,15 @@ def test_gdal_translate_cleanup():
     except:
         pass
     try:
-        os.remove('tmp/test_gdal_translate_30.tif')
+        os.remove('tmp/test_gdal_translate_31.tif')
+    except:
+        pass
+    try:
+        os.remove('tmp/test_gdal_translate_32.tif')
+    except:
+        pass
+    try:
+        gdal.GetDriverByName('HFA').Delete('tmp/test_gdal_translate_33.img')
     except:
         pass
     try:
