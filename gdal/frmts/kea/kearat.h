@@ -35,7 +35,7 @@
 #include "gdal_rat.h"
 #include "keaband.h"
 
-class KEARasterAttributeTable : public GDALRasterAttributeTable
+class KEARasterAttributeTable : public GDALDefaultRasterAttributeTable
 {
 private:
     kealib::KEAAttributeTable *m_poKEATable;
@@ -78,7 +78,6 @@ public:
                                 GDALRATFieldUsage eFieldUsage );
 
     virtual CPLXMLNode   *Serialize() const;
-
 };
 
 #endif //KEARAT_H

@@ -184,6 +184,9 @@ GDALDefaultRasterAttributeTable *KEARasterAttributeTable::Clone() const
             CPLFree(papszColData);
         }
     }
+
+    poRAT->SetTableType(this->GetTableType());
+
     return poRAT;
 }
 
