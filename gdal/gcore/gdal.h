@@ -748,6 +748,14 @@ typedef enum {
     /*! Maximum GFU value */               GFU_MaxCount
 } GDALRATFieldUsage;
 
+/** RAT table type (thematic or athematic)
+  * @since GDAL 2.0
+  */
+typedef enum {
+    /*! Thematic table type */            GRTT_THEMATIC,
+    /*! Athematic table type */           GRTT_ATHEMATIC
+} GDALRATTableType;
+
 GDALRasterAttributeTableH CPL_DLL CPL_STDCALL 
                                            GDALCreateRasterAttributeTable(void);
 void CPL_DLL CPL_STDCALL GDALDestroyRasterAttributeTable(
@@ -799,6 +807,9 @@ CPLErr CPL_DLL CPL_STDCALL GDALRATSetLinearBinning( GDALRasterAttributeTableH,
                                                     double, double );
 int CPL_DLL CPL_STDCALL GDALRATGetLinearBinning( GDALRasterAttributeTableH, 
                                                  double *, double * );
+CPLErr CPL_STDCALL GDALRATSetTableType( GDALRasterAttributeTableH hRAT, 
+                         const GDALRATTableType eInTableType );
+GDALRATTableType CPL_STDCALL GDALRATGetTableType( GDALRasterAttributeTableH hRAT);
 CPLErr CPL_DLL CPL_STDCALL GDALRATInitializeFromColorTable(
     GDALRasterAttributeTableH, GDALColorTableH );
 GDALColorTableH CPL_DLL CPL_STDCALL GDALRATTranslateToColorTable(
@@ -806,9 +817,11 @@ GDALColorTableH CPL_DLL CPL_STDCALL GDALRATTranslateToColorTable(
 void CPL_DLL CPL_STDCALL GDALRATDumpReadable( GDALRasterAttributeTableH, 
                                               FILE * );
 GDALRasterAttributeTableH CPL_DLL CPL_STDCALL 
-    GDALRATClone( GDALRasterAttributeTableH );
+    GDALRATClone( const GDALRasterAttributeTableH );
 
 int CPL_DLL CPL_STDCALL GDALRATGetRowOfValue( GDALRasterAttributeTableH , double );
+
+void CPL_DLL CPL_STDCALL GDALRATRemoveStatistics( GDALRasterAttributeTableH );
 
 
 /* ==================================================================== */

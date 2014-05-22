@@ -41,7 +41,7 @@ CPL_CVSID("$Id$");
 static int ArgIsNumeric( const char * );
 static void AttachMetadata( GDALDatasetH, char ** );
 static void CopyBandInfo( GDALRasterBand * poSrcBand, GDALRasterBand * poDstBand,
-                            int bCanCopyStatsMetadata, int bCopyScale, int bCopyNoData );
+                            int bCanCopyStatsMetadata, int bCopyScale, int bCopyNoData, int bCopyRAT );
 static int bSubCall = FALSE;
 
 /*  ******************************************************************* */
@@ -275,18 +275,18 @@ typedef struct
 static int ProxyMain( int argc, char ** argv )
 
 {
-    GDALDatasetH	hDataset, hOutDS;
-    int			i;
-    int			nRasterXSize, nRasterYSize;
-    const char		*pszSource=NULL, *pszDest=NULL, *pszFormat = "GTiff";
+    GDALDatasetH    hDataset, hOutDS;
+    int         i;
+    int         nRasterXSize, nRasterYSize;
+    const char      *pszSource=NULL, *pszDest=NULL, *pszFormat = "GTiff";
     int bFormatExplicitelySet = FALSE;
-    GDALDriverH		hDriver;
-    int			*panBandList = NULL; /* negative value of panBandList[i] means mask band of ABS(panBandList[i]) */
+    GDALDriverH     hDriver;
+    int         *panBandList = NULL; /* negative value of panBandList[i] means mask band of ABS(panBandList[i]) */
     int         nBandCount = 0, bDefBands = TRUE;
-    double		adfGeoTransform[6];
-    GDALDataType	eOutputType = GDT_Unknown;
-    int			nOXSize = 0, nOYSize = 0;
-    char		*pszOXSize=NULL, *pszOYSize=NULL;
+    double      adfGeoTransform[6];
+    GDALDataType    eOutputType = GDT_Unknown;
+    int         nOXSize = 0, nOYSize = 0;
+    char        *pszOXSize=NULL, *pszOYSize=NULL;
     char                **papszCreateOptions = NULL;
     int                 anSrcWin[4], bStrict = FALSE;
     const char          *pszProjection;
@@ -311,7 +311,7 @@ static int ProxyMain( int argc, char ** argv )
     double              adfULLR[4] = { 0,0,0,0 };
     int                 bSetNoData = FALSE;
     int                 bUnsetNoData = FALSE;
-    double		dfNoDataReal = 0.0;
+    double      dfNoDataReal = 0.0;
     int                 nRGBExpand = 0;
     int                 bParsedMaskArgument = FALSE;
     int                 eMaskMode = MASK_AUTO;
@@ -1554,7 +1554,8 @@ static int ProxyMain( int argc, char ** argv )
             CopyBandInfo( poSrcBand, poVRTBand,
                           !bStats && !bFilterOutStatsMetadata,
                           !bUnscale,
-                          !bSetNoData && !bUnsetNoData );
+                          !bSetNoData && !bUnsetNoData,
+                          !bNoRAT );
         }
 
 /* -------------------------------------------------------------------- */
@@ -1760,7 +1761,7 @@ static void AttachMetadata( GDALDatasetH hDS, char **papszMetadataOptions )
 /* more and more custom behaviour in the context of gdal_translate ... */
 
 static void CopyBandInfo( GDALRasterBand * poSrcBand, GDALRasterBand * poDstBand,
-                          int bCanCopyStatsMetadata, int bCopyScale, int bCopyNoData )
+                          int bCanCopyStatsMetadata, int bCopyScale, int bCopyNoData, int bCopyRAT )
 
 {
     int bSuccess;
@@ -1769,6 +1770,10 @@ static void CopyBandInfo( GDALRasterBand * poSrcBand, GDALRasterBand * poDstBand
     if (bCanCopyStatsMetadata)
     {
         poDstBand->SetMetadata( poSrcBand->GetMetadata() );
+        if (bCopyRAT)
+        {
+            poDstBand->SetDefaultRAT( poSrcBand->GetDefaultRAT() );
+        }
     }
     else
     {
@@ -1781,6 +1786,16 @@ static void CopyBandInfo( GDALRasterBand * poSrcBand, GDALRasterBand * poDstBand
         }
         poDstBand->SetMetadata( papszMetadataNew );
         CSLDestroy(papszMetadataNew);
+
+        // we need to strip histogram data from the source RAT
+        if (poSrcBand->GetDefaultRAT() && bCopyRAT)
+        {
+            GDALRasterAttributeTable *poNewRAT = poSrcBand->GetDefaultRAT()->Clone();
+            poNewRAT->RemoveStatistics();
+            poDstBand->SetDefaultRAT( poNewRAT );
+            // since SetDefaultRAT copies the RAT data we need to delete our original
+            delete poNewRAT;
+        }
     }
 
     poDstBand->SetColorTable( poSrcBand->GetColorTable() );

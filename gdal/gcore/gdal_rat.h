@@ -233,6 +233,9 @@ public:
      */
     virtual int           ChangesAreWrittenToFile() = 0;
 
+    virtual CPLErr        SetTableType(const GDALRATTableType eInTableType) = 0;
+    virtual GDALRATTableType GetTableType() const = 0;
+
     virtual CPLErr        ValuesIO(GDALRWFlag eRWFlag, int iField, int iStartRow, int iLength, double *pdfData);
     virtual CPLErr        ValuesIO(GDALRWFlag eRWFlag, int iField, int iStartRow, int iLength, int *pnData);
     virtual CPLErr        ValuesIO(GDALRWFlag eRWFlag, int iField, int iStartRow, int iLength, char **papszStrList);
@@ -260,6 +263,7 @@ public:
     virtual GDALColorTable *TranslateToColorTable( int nEntryCount = -1 );
     
     virtual void          DumpReadable( FILE * = NULL );
+    virtual void          RemoveStatistics() = 0;
 };
 
 /************************************************************************/
@@ -296,6 +300,8 @@ private:
     int bLinearBinning;
     double dfRow0Min;
     double dfBinSize;
+
+    GDALRATTableType eTableType;
 
     void  AnalyseColumns();
     int   bColumnsAnalysed;
@@ -343,6 +349,10 @@ public:
     virtual CPLErr        SetLinearBinning( double dfRow0Min, double dfBinSize );
     virtual int           GetLinearBinning( double *pdfRow0Min, double *pdfBinSize ) const;
 
+    virtual CPLErr        SetTableType(const GDALRATTableType eInTableType);
+    virtual GDALRATTableType GetTableType() const;
+
+    virtual void          RemoveStatistics();
 };
 
 #endif /* ndef GDAL_RAT_H_INCLUDED */

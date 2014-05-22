@@ -412,7 +412,7 @@ public:
     int               bConvertColors; // map 0-1 floats to 0-255 ints
 };
 
-class HFARasterAttributeTable : public GDALRasterAttributeTable
+class HFARasterAttributeTable : public GDALDefaultRasterAttributeTable
 {
 private:
 
@@ -731,6 +731,8 @@ GDALDefaultRasterAttributeTable *HFARasterAttributeTable::Clone() const
 
     if( this->bLinearBinning )
         poRAT->SetLinearBinning( this->dfRow0Min, this->dfBinSize );
+
+    poRAT->SetTableType(this->GetTableType());
 
     return poRAT;
 }
@@ -2203,6 +2205,17 @@ void HFARasterBand::ReadAuxMetadata()
             CPLAssert( FALSE );
         }
     }
+
+    /* if we have a default RAT we can now set its thematic/athematic state 
+       from the metadata we just read in */
+    if ( GetDefaultRAT() )
+    {
+        const char * psLayerType = GetMetadataItem( "LAYER_TYPE","" );
+        if (psLayerType)
+        {
+            GetDefaultRAT()->SetTableType(EQUALN(psLayerType,"athematic",9)?GRTT_ATHEMATIC:GRTT_THEMATIC);
+        }
+    }
 }
 
 /************************************************************************/
@@ -3054,7 +3067,9 @@ CPLErr HFARasterBand::SetDefaultRAT( const GDALRasterAttributeTable * poRAT )
     if( poRAT == NULL )
         return CE_Failure;
 
-    return WriteNamedRAT( "Descriptor_Table", poRAT );
+    WriteNamedRAT( "Descriptor_Table", poRAT );
+    this->poDefaultRAT = poRAT->Clone();
+    return CE_None;
 }
 
 /************************************************************************/
@@ -3096,9 +3111,13 @@ CPLErr HFARasterBand::WriteNamedRAT( CPL_UNUSED const char *pszName,
         /* then it should have an Edsc_BinFunction */
         HFAEntry *poBinFunction = poDT->GetNamedChild( "#Bin_Function#" );
         if( poBinFunction == NULL || !EQUAL(poBinFunction->GetType(),"Edsc_BinFunction") )
+        {
             poBinFunction = new HFAEntry( hHFA->papoBand[nBand-1]->psInfo,
                                           "#Bin_Function#", "Edsc_BinFunction",
                                           poDT );
+            // Edsc_BinFunction needs a size set before setting field values.
+            poBinFunction->MakeData(22);
+        }
        
         poBinFunction->SetStringField("binFunction", "direct");
         poBinFunction->SetDoubleField("minLimit",dfRow0Min);
@@ -5897,6 +5916,18 @@ HFADataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 
     if( poDS == NULL )
         return NULL;
+
+/* -------------------------------------------------------------------- */
+/*      Does the source have a RAT for any of the bands?  If so,        */
+/*      copy it over.                                                   */
+/* -------------------------------------------------------------------- */
+    for( iBand = 0; iBand < nBandCount; iBand++ )
+    {
+        GDALRasterBand *poBand = poSrcDS->GetRasterBand( iBand+1 );
+
+        if( poBand->GetDefaultRAT() != NULL )
+            poDS->GetRasterBand(iBand+1)->SetDefaultRAT( poBand->GetDefaultRAT() );
+    }
 
 /* -------------------------------------------------------------------- */
 /*      Does the source have a PCT for any of the bands?  If so,        */
