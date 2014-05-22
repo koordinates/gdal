@@ -209,7 +209,7 @@ class HFAAttributeField
     bool              bConvertColors;  // Map 0-1 floats to 0-255 ints.
 };
 
-class HFARasterAttributeTable CPL_FINAL : public GDALRasterAttributeTable
+class HFARasterAttributeTable CPL_FINAL : public GDALDefaultRasterAttributeTable
 {
   private:
     HFAHandle   hHFA;
