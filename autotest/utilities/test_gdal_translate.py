@@ -6,10 +6,10 @@
 # Project:  GDAL/OGR Test Suite
 # Purpose:  gdal_translate testing
 # Author:   Even Rouault <even dot rouault @ mines-paris dot org>
-# 
+#
 ###############################################################################
 # Copyright (c) 2008-2014, Even Rouault <even dot rouault at mines-paris dot org>
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
 # to deal in the Software without restriction, including without limitation
@@ -19,7 +19,7 @@
 #
 # The above copyright notice and this permission notice shall be included
 # in all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
@@ -361,7 +361,7 @@ def test_gdal_translate_13():
     if ds is None:
         return 'fail'
 
-    md = ds.GetMetadata() 
+    md = ds.GetMetadata()
     if 'TIFFTAG_DOCUMENTNAME' not in md:
         gdaltest.post_reason('Did not get TIFFTAG_DOCUMENTNAME')
         return 'fail'
@@ -383,7 +383,7 @@ def test_gdal_translate_14():
     if ds is None:
         return 'fail'
 
-    md = ds.GetMetadata('IMAGE_STRUCTURE') 
+    md = ds.GetMetadata('IMAGE_STRUCTURE')
     if 'COMPRESSION' not in md or md['COMPRESSION'] != 'LZW':
         gdaltest.post_reason('Did not get COMPRESSION')
         return 'fail'
@@ -518,7 +518,7 @@ def test_gdal_translate_19():
         return 'skip'
 
     ds = gdal.GetDriverByName('GTiff').Create('tmp/test_gdal_translate_19_src.tif',1,1,2)
-    ct = gdal.ColorTable() 
+    ct = gdal.ColorTable()
     ct.SetColorEntry( 127, (1,2,3,255) )
     ds.GetRasterBand( 1 ).SetRasterColorTable( ct )
     ds.GetRasterBand( 1 ).Fill(127)
@@ -547,7 +547,7 @@ def test_gdal_translate_19():
     ds = None
 
     return 'success'
-    
+
 ###############################################################################
 # Test -a_nodata None
 
@@ -615,7 +615,7 @@ def test_gdal_translate_22():
         return 'fail'
 
     if 'STATISTICS_HISTOBINVALUES' in md:
-        gdaltest.post_reason( 'did not expected a STATISTICS_MINIMUM value.' )
+        gdaltest.post_reason( 'did not expected a STATISTICS_HISTOBINVALUES value.' )
         return 'fail'
 
     return 'success'
@@ -720,6 +720,98 @@ def test_gdal_translate_26():
 
     return 'success'
 ###############################################################################
+# Test RAT is copied from hfa to gtiff - continuous/athematic
+
+def test_gdal_translate_27():
+    if test_cli_utilities.get_gdal_translate_path() is None:
+        return 'skip'
+
+    gdaltest.runexternal(test_cli_utilities.get_gdal_translate_path() + ' -of gtiff data/onepixelcontinuous.img tmp/test_gdal_translate_27.tif')
+
+    ds = gdal.Open('tmp/test_gdal_translate_27.tif')
+    if ds is None:
+        return 'fail'
+
+    rat = ds.GetRasterBand(1).GetDefaultRAT()
+    if not rat:
+        gdaltest.post_reason('Did not get RAT')
+        return 'fail'
+
+    if not rat.GetRowCount() == 256:
+        gdaltest.post_reason('RAT has incorrect row count')
+        return 'fail'
+
+    if rat.GetTableType() != 1:
+        gdaltest.post_reason('RAT not athematic')
+        return 'fail'
+    rat = None
+    ds = None
+
+    return 'success'
+
+###############################################################################
+# Test RAT is copied from hfa to gtiff - thematic
+
+def test_gdal_translate_28():
+    if test_cli_utilities.get_gdal_translate_path() is None:
+        return 'skip'
+
+    gdaltest.runexternal(test_cli_utilities.get_gdal_translate_path() + ' -q -of gtiff data/onepixelthematic.img tmp/test_gdal_translate_28.tif')
+
+    ds = gdal.Open('tmp/test_gdal_translate_28.tif')
+    if ds is None:
+        return 'fail'
+
+    rat = ds.GetRasterBand(1).GetDefaultRAT()
+    if not rat:
+        gdaltest.post_reason('Did not get RAT')
+        return 'fail'
+
+    if not rat.GetRowCount() == 256:
+        gdaltest.post_reason('RAT has incorrect row count')
+        return 'fail'
+
+    if rat.GetTableType() != 0:
+        gdaltest.post_reason('RAT not thematic')
+        return 'fail'
+    rat = None
+    ds = None
+
+    return 'success'
+
+###############################################################################
+# Test RAT is copied round trip back to hfa
+
+def test_gdal_translate_29():
+    if test_cli_utilities.get_gdal_translate_path() is None:
+        return 'skip'
+
+    gdaltest.runexternal(test_cli_utilities.get_gdal_translate_path() + ' -q -of hfa tmp/test_gdal_translate_28.tif tmp/test_gdal_translate_29.img')
+
+    ds = gdal.Open('tmp/test_gdal_translate_29.img')
+    if ds is None:
+        return 'fail'
+
+    rat = ds.GetRasterBand(1).GetDefaultRAT()
+    if not rat:
+        gdaltest.post_reason('Did not get RAT')
+        return 'fail'
+
+    if not rat.GetRowCount() == 256:
+        gdaltest.post_reason('RAT has incorrect row count')
+        return 'fail'
+
+    if rat.GetTableType() != 0:
+        gdaltest.post_reason('RAT not thematic')
+        return 'fail'
+    rat = None
+    ds = None
+
+    return 'success'
+
+###############################################################################
+
+
 # Cleanup
 
 def test_gdal_translate_cleanup():
@@ -797,6 +889,18 @@ def test_gdal_translate_cleanup():
         gdal.GetDriverByName('GTiff').Delete('tmp/test_gdal_translate_26.tif')
     except:
         pass
+    try:
+        gdal.GetDriverByName('GTiff').Delete('tmp/test_gdal_translate_27.tif')
+    except:
+        pass
+    try:
+        gdal.GetDriverByName('GTiff').Delete('tmp/test_gdal_translate_28.tif')
+    except:
+        pass
+    try:
+        gdal.GetDriverByName('HFA').Delete('tmp/test_gdal_translate_29.img')
+    except:
+        pass
     return 'success'
 
 gdaltest_list = [
@@ -826,6 +930,9 @@ gdaltest_list = [
     test_gdal_translate_24,
     test_gdal_translate_25,
     test_gdal_translate_26,
+    test_gdal_translate_27,
+    test_gdal_translate_28,
+    test_gdal_translate_29,
     test_gdal_translate_cleanup
     ]
 

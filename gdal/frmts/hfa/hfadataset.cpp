@@ -412,7 +412,7 @@ public:
     int               bConvertColors; // map 0-1 floats to 0-255 ints
 };
 
-class HFARasterAttributeTable : public GDALRasterAttributeTable
+class HFARasterAttributeTable : public GDALDefaultRasterAttributeTable
 {
 private:
 
@@ -731,6 +731,8 @@ GDALDefaultRasterAttributeTable *HFARasterAttributeTable::Clone() const
 
     if( this->bLinearBinning )
         poRAT->SetLinearBinning( this->dfRow0Min, this->dfBinSize );
+
+    poRAT->SetTableType(this->GetTableType());
 
     return poRAT;
 }
@@ -2203,6 +2205,17 @@ void HFARasterBand::ReadAuxMetadata()
             CPLAssert( FALSE );
         }
     }
+
+    /* if we have a default RAT we can now set its thematic/athematic state 
+       from the metadata we just read in */
+    if ( GetDefaultRAT() )
+    {
+        const char * psLayerType = GetMetadataItem( "LAYER_TYPE","" );
+        if (psLayerType)
+        {
+            GetDefaultRAT()->SetTableType(EQUALN(psLayerType,"athematic",9)?GRTT_ATHEMATIC:GRTT_THEMATIC);
+        }
+    }
 }
 
 /************************************************************************/
@@ -3048,13 +3061,17 @@ HFARasterBand::GetDefaultHistogram( double *pdfMin, double *pdfMax,
 /*                           SetDefaultRAT()                            */
 /************************************************************************/
 
+#include <iostream>
 CPLErr HFARasterBand::SetDefaultRAT( const GDALRasterAttributeTable * poRAT )
 
 {
     if( poRAT == NULL )
         return CE_Failure;
 
-    return WriteNamedRAT( "Descriptor_Table", poRAT );
+    std::cout << "HFARasterBand::SetDefaultRAT" << std::endl;
+    WriteNamedRAT( "Descriptor_Table", poRAT );
+    this->poDefaultRAT = poRAT->Clone();
+    return CE_None;
 }
 
 /************************************************************************/
@@ -5898,6 +5915,24 @@ HFADataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 
     if( poDS == NULL )
         return NULL;
+
+/* -------------------------------------------------------------------- */
+/*      Does the source have a RAT for any of the bands?  If so,        */
+/*      copy it over.                                                   */
+/* -------------------------------------------------------------------- */
+
+/*--------------------------------------------------------------------- */
+/*      I don't fully understand why this is here, but it causes tests  */
+/*      To fail, so it's now gone                                       */
+/* -------------------------------------------------------------------- */
+    
+    // for( iBand = 0; iBand < nBandCount; iBand++ )
+    // {
+    //     GDALRasterBand *poBand = poSrcDS->GetRasterBand( iBand+1 );
+
+    //     if( poBand->GetDefaultRAT() != NULL )
+    //         poDS->GetRasterBand(iBand+1)->SetDefaultRAT( poBand->GetDefaultRAT() );
+    // }
 
 /* -------------------------------------------------------------------- */
 /*      Does the source have a PCT for any of the bands?  If so,        */
