@@ -3061,6 +3061,7 @@ HFARasterBand::GetDefaultHistogram( double *pdfMin, double *pdfMax,
 /*                           SetDefaultRAT()                            */
 /************************************************************************/
 
+#include <iostream>
 CPLErr HFARasterBand::SetDefaultRAT( const GDALRasterAttributeTable * poRAT )
 
 {
