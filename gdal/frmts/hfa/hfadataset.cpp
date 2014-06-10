@@ -3111,9 +3111,13 @@ CPLErr HFARasterBand::WriteNamedRAT( const char *pszName, const GDALRasterAttrib
         /* then it should have an Edsc_BinFunction */
         HFAEntry *poBinFunction = poDT->GetNamedChild( "#Bin_Function#" );
         if( poBinFunction == NULL || !EQUAL(poBinFunction->GetType(),"Edsc_BinFunction") )
+        {
             poBinFunction = new HFAEntry( hHFA->papoBand[nBand-1]->psInfo,
                                           "#Bin_Function#", "Edsc_BinFunction",
                                           poDT );
+            // Edsc_BinFunction needs a size set before setting field values.
+            poBinFunction->MakeData(22);
+        }
        
         poBinFunction->SetStringField("binFunction", "direct");
         poBinFunction->SetDoubleField("minLimit",dfRow0Min);
@@ -5918,19 +5922,13 @@ HFADataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 /*      Does the source have a RAT for any of the bands?  If so,        */
 /*      copy it over.                                                   */
 /* -------------------------------------------------------------------- */
+    for( iBand = 0; iBand < nBandCount; iBand++ )
+    {
+        GDALRasterBand *poBand = poSrcDS->GetRasterBand( iBand+1 );
 
-/*--------------------------------------------------------------------- */
-/*      I don't fully understand why this is here, but it causes tests  */
-/*      To fail, so it's now gone                                       */
-/* -------------------------------------------------------------------- */
-    
-    // for( iBand = 0; iBand < nBandCount; iBand++ )
-    // {
-    //     GDALRasterBand *poBand = poSrcDS->GetRasterBand( iBand+1 );
-
-    //     if( poBand->GetDefaultRAT() != NULL )
-    //         poDS->GetRasterBand(iBand+1)->SetDefaultRAT( poBand->GetDefaultRAT() );
-    // }
+        if( poBand->GetDefaultRAT() != NULL )
+            poDS->GetRasterBand(iBand+1)->SetDefaultRAT( poBand->GetDefaultRAT() );
+    }
 
 /* -------------------------------------------------------------------- */
 /*      Does the source have a PCT for any of the bands?  If so,        */
