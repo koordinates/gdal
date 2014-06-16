@@ -1210,11 +1210,11 @@ int OGRPGDataSource::DeleteLayer( int iLayer )
 }
 
 /************************************************************************/
-/*                            CreateLayer()                             */
+/*                           ICreateLayer()                             */
 /************************************************************************/
 
 OGRLayer *
-OGRPGDataSource::CreateLayer( const char * pszLayerName,
+OGRPGDataSource::ICreateLayer( const char * pszLayerName,
                               OGRSpatialReference *poSRS,
                               OGRwkbGeometryType eType,
                               char ** papszOptions )
@@ -1233,7 +1233,7 @@ OGRPGDataSource::CreateLayer( const char * pszLayerName,
     const char* pszFIDColumnName = CSLFetchNameValue(papszOptions, "FID");
     CPLString osFIDColumnName;
     if (pszFIDColumnName == NULL)
-        osFIDColumnName = "OGC_FID";
+        osFIDColumnName = "ogc_fid";
     else
     {
         if( CSLFetchBoolean(papszOptions,"LAUNDER", TRUE) )
@@ -1445,13 +1445,15 @@ OGRPGDataSource::CreateLayer( const char * pszLayerName,
     
     if( eType != wkbNone && !bHavePostGIS )
     {
+        pszGFldName = "wkb_geometry";
         osCommand.Printf(
                  "%s ( "
                  "    %s SERIAL, "
-                 "   WKB_GEOMETRY %s, "
+                 "   %s %s, "
                  "   PRIMARY KEY (%s) )",
                  osCreateTable.c_str(),
                  pszFIDColumnName,
+                 pszGFldName,
                  pszGeomType,
                  pszFIDColumnName);
     }
@@ -1618,14 +1620,8 @@ OGRPGDataSource::CreateLayer( const char * pszLayerName,
 
     poLayer = new OGRPGTableLayer( this, osCurrentSchema, pszTableName,
                                    pszSchemaName, NULL, TRUE );
-    if( !(poLayer->ReadTableDefinition()) )
-    {
-        CPLFree( pszTableName );
-        CPLFree( pszSchemaName );
-        delete poLayer;
-        return NULL;
-    }
-
+    poLayer->SetTableDefinition(pszFIDColumnName, pszGFldName, eType,
+                                pszGeomType, nSRSId, nDimension);
     poLayer->SetLaunderFlag( CSLFetchBoolean(papszOptions,"LAUNDER",TRUE) );
     poLayer->SetPrecisionFlag( CSLFetchBoolean(papszOptions,"PRECISION",TRUE));
     //poLayer->SetForcedSRSId(nForcedSRSId);
@@ -2316,11 +2312,11 @@ OGRFeature *OGRPGNoResetResultLayer::GetNextFeature()
 class OGRPGMemLayerWrapper : public OGRLayer
 {
   private:
-      OGRDataSource  *poMemDS;
+      GDALDataset  *poMemDS;
       OGRLayer       *poMemLayer;
 
   public:
-                        OGRPGMemLayerWrapper( OGRDataSource  *poMemDSIn )
+                        OGRPGMemLayerWrapper( GDALDataset  *poMemDSIn )
                         {
                             poMemDS = poMemDSIn;
                             poMemLayer = poMemDS->GetLayer(0);
@@ -2355,11 +2351,11 @@ OGRLayer * OGRPGDataSource::ExecuteSQL( const char *pszSQLCommand,
         if( !bHasLoadTables )
             return NULL;
 
-        OGRSFDriver* poMemDriver = OGRSFDriverRegistrar::GetRegistrar()->
+        GDALDriver* poMemDriver = OGRSFDriverRegistrar::GetRegistrar()->
                                 GetDriverByName("Memory");
         if (poMemDriver)
         {
-            OGRDataSource* poMemDS = poMemDriver->CreateDataSource("");
+            GDALDataset* poMemDS = poMemDriver->Create("", 0, 0, 0, GDT_Unknown, NULL);
             return new OGRPGMemLayerWrapper(poMemDS);
         }
         return NULL;
@@ -2415,12 +2411,12 @@ OGRLayer * OGRPGDataSource::ExecuteSQL( const char *pszSQLCommand,
                 CPLDebug( "PG", "Command Results Tuples = %d", PQntuples(hResult) );
                 FlushSoftTransaction();
 
-                OGRSFDriver* poMemDriver = OGRSFDriverRegistrar::GetRegistrar()->
+                GDALDriver* poMemDriver = OGRSFDriverRegistrar::GetRegistrar()->
                                 GetDriverByName("Memory");
                 if (poMemDriver)
                 {
                     OGRPGLayer* poResultLayer = new OGRPGNoResetResultLayer( this, hResult );
-                    OGRDataSource* poMemDS = poMemDriver->CreateDataSource("");
+                    GDALDataset* poMemDS = poMemDriver->Create("", 0, 0, 0, GDT_Unknown, NULL);
                     poMemDS->CopyLayer(poResultLayer, "sql_statement");
                     OGRPGMemLayerWrapper* poResLayer = new OGRPGMemLayerWrapper(poMemDS);
                     delete poResultLayer;

@@ -57,6 +57,7 @@ OGRSXFLayer::OGRSXFLayer(VSILFILE* fp, void** hIOMutex, GByte nID, const char* p
     m_hIOMutex = hIOMutex;
     m_dfCoeff = stSXFMapDescription.dfScale / stSXFMapDescription.nResolution;
     poFeatureDefn = new OGRFeatureDefn(pszLayerName);
+    SetDescription( poFeatureDefn->GetName() );
     poFeatureDefn->Reference();
     
     poFeatureDefn->SetGeomType(wkbUnknown);
@@ -124,7 +125,7 @@ void OGRSXFLayer::AddClassifyCode(unsigned nClassCode, const char *szName)
 /*                         AddRecord()                               */
 /************************************************************************/
 
-int OGRSXFLayer::AddRecord(long nFID, unsigned nClassCode, vsi_l_offset nOffset, bool bHasSemantic, int nSemanticsSize)
+int OGRSXFLayer::AddRecord(long nFID, unsigned nClassCode, vsi_l_offset nOffset, bool bHasSemantic, size_t nSemanticsSize)
 {
     if (mnClassificators.empty() || mnClassificators.find(nClassCode) != mnClassificators.end())
     {
@@ -276,7 +277,7 @@ int OGRSXFLayer::AddRecord(long nFID, unsigned nClassCode, vsi_l_offset nOffset,
 
 OGRErr OGRSXFLayer::SetNextByIndex(long nIndex)
 {
-    if (nIndex < 0 || nIndex > mnRecordDesc.size())
+    if (nIndex < 0 || nIndex > (long)mnRecordDesc.size())
         return OGRERR_FAILURE;
 
     oNextIt = mnRecordDesc.begin();
@@ -1118,9 +1119,9 @@ OGRFeature *OGRSXFLayer::TranslateLine(const SXFRecordDescription& certifInfo,
 {
     double dfX = 1.0;
     double dfY = 1.0;
-
     GUInt32 nOffset = 0;
-
+    GUInt32 count;
+    
 	//OGRFeatureDefn *fd = poFeatureDefn->Clone();
 	//fd->SetGeomType( wkbMultiLineString );
  //   OGRFeature *poFeature = new OGRFeature(fd);
@@ -1138,7 +1139,7 @@ OGRFeature *OGRSXFLayer::TranslateLine(const SXFRecordDescription& certifInfo,
                   "SXF. 3D metrics do not support." );
 	}
 
-    for(int count=0 ; count <  certifInfo.nPointCount ; count++)
+    for(count=0 ; count <  certifInfo.nPointCount ; count++)
     {
         const char * psCoords = psRecordBuf + nOffset ;
         GUInt32 nDelta = TranslateXYH( certifInfo, psCoords, nBufLen - nOffset, &dfX, &dfY );
@@ -1213,9 +1214,9 @@ OGRFeature *OGRSXFLayer::TranslateVetorAngle(const SXFRecordDescription& certifI
 
     double dfX = 1.0;
     double dfY = 1.0;
-
     GUInt32 nOffset = 0;
-
+    GUInt32 count;
+    
     OGRFeature *poFeature = new OGRFeature(poFeatureDefn);
     OGRPoint *poPT = new OGRPoint();
 
@@ -1229,7 +1230,7 @@ OGRFeature *OGRSXFLayer::TranslateVetorAngle(const SXFRecordDescription& certifI
             "SXF. 3D metrics do not support.");
     }
 
-    for (int count = 0; count < certifInfo.nPointCount; count++)
+    for (count = 0; count < certifInfo.nPointCount; count++)
     {
         const char * psCoords = psRecordBuf + nOffset;
         GUInt32 nDelta = TranslateXYH(certifInfo, psCoords, nBufLen - nOffset, &dfX, &dfY);
@@ -1271,6 +1272,7 @@ OGRFeature *OGRSXFLayer::TranslatePolygon(const SXFRecordDescription& certifInfo
     double dfX = 1.0;
     double dfY = 1.0;
     GUInt32 nOffset = 0;
+    GUInt32 count;
 
 	//OGRFeatureDefn *fd = poFeatureDefn->Clone();
 	//fd->SetGeomType( wkbMultiPolygon );
@@ -1288,7 +1290,7 @@ OGRFeature *OGRSXFLayer::TranslatePolygon(const SXFRecordDescription& certifInfo
 					"SXF. 3D metrics do not support." );
 	}
 
-    for(int count=0 ; count <  certifInfo.nPointCount ; count++)
+    for(count=0 ; count <  certifInfo.nPointCount ; count++)
     {
         const char * psBuf = psRecordBuf + nOffset ;
 
@@ -1363,7 +1365,7 @@ OGRFeature *OGRSXFLayer::TranslateText(const SXFRecordDescription& certifInfo,
     double dfX = 1.0;
     double dfY = 1.0;
     GUInt32 nOffset = 0;
-
+    GUInt32 count;
 	//OGRFeatureDefn *fd = poFeatureDefn->Clone();
 	//fd->SetGeomType( wkbLineString );
  //   OGRFeature *poFeature = new OGRFeature(fd);
@@ -1377,7 +1379,7 @@ OGRFeature *OGRSXFLayer::TranslateText(const SXFRecordDescription& certifInfo,
 					"SXF. 3D metrics do not support." );
 	}
 
-    for(int count=0 ; count <  certifInfo.nPointCount ; count++)
+    for(count=0 ; count <  certifInfo.nPointCount ; count++)
     {
         const char * psBuf = psRecordBuf + nOffset;
         GUInt32 nDelta = TranslateXYH( certifInfo, psBuf, nBufLen - nOffset, &dfX, &dfY );

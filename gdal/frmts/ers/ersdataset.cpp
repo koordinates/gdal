@@ -553,7 +553,15 @@ CPLErr ERSDataset::SetGeoTransform( double *padfTransform )
                    CPLString().Printf( "%.15g", adfGeoTransform[0] ) );
     poHeader->Set( "RasterInfo.RegistrationCoord.Northings", 
                    CPLString().Printf( "%.15g", adfGeoTransform[3] ) );
-    
+
+    if( CPLAtof(poHeader->Find("RasterInfo.RegistrationCellX", "0")) != 0.0 ||
+        CPLAtof(poHeader->Find("RasterInfo.RegistrationCellY", "0")) != 0.0 ) 
+    {
+        // Reset RegistrationCellX/Y to 0 if the header gets rewritten (#5493)
+        poHeader->Set("RasterInfo.RegistrationCellX", "0");
+        poHeader->Set("RasterInfo.RegistrationCellY", "0");
+    }
+
     return CE_None;
 }
 
@@ -1434,6 +1442,7 @@ void GDALRegister_ERS()
         poDriver = new GDALDriver();
         
         poDriver->SetDescription( "ERS" );
+        poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
         poDriver->SetMetadataItem( GDAL_DMD_LONGNAME, 
                                    "ERMapper .ers Labelled" );
         poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC, 

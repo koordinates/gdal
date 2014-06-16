@@ -82,7 +82,7 @@ GIFAbstractDataset::~GIFAbstractDataset()
     }
 
     if( hGifFile )
-        DGifCloseFile( hGifFile );
+        myDGifCloseFile( hGifFile );
 
     if( fp != NULL )
         VSIFCloseL( fp );
@@ -327,12 +327,54 @@ int GIFAbstractDataset::Identify( GDALOpenInfo * poOpenInfo )
 void GIFAbstractDataset::DetectGeoreferencing( GDALOpenInfo * poOpenInfo )
 {
     bGeoTransformValid =
-        GDALReadWorldFile( poOpenInfo->pszFilename, NULL,
-                           adfGeoTransform );
+        GDALReadWorldFile2( poOpenInfo->pszFilename, NULL,
+                           adfGeoTransform, poOpenInfo->GetSiblingFiles(), NULL );
     if ( !bGeoTransformValid )
     {
         bGeoTransformValid =
-            GDALReadWorldFile( poOpenInfo->pszFilename, ".wld",
-                               adfGeoTransform );
+            GDALReadWorldFile2( poOpenInfo->pszFilename, ".wld",
+                               adfGeoTransform, poOpenInfo->GetSiblingFiles(), NULL );
     }
+}
+
+/************************************************************************/
+/*                            myDGifOpen()                              */
+/************************************************************************/
+
+GifFileType* GIFAbstractDataset::myDGifOpen( void *userPtr, InputFunc readFunc )
+{
+#if defined(GIFLIB_MAJOR) && GIFLIB_MAJOR >= 5
+    int nErrorCode;
+    return DGifOpen( userPtr, readFunc, &nErrorCode );
+#else
+    return DGifOpen( userPtr, readFunc );
+#endif
+}
+
+/************************************************************************/
+/*                          myDGifCloseFile()                           */
+/************************************************************************/
+
+int GIFAbstractDataset::myDGifCloseFile( GifFileType *hGifFile )
+{
+#if defined(GIFLIB_MAJOR) && ((GIFLIB_MAJOR == 5 && GIFLIB_MINOR >= 1) || GIFLIB_MAJOR > 5)
+    int nErrorCode;
+    return DGifCloseFile( hGifFile, &nErrorCode );
+#else
+    return DGifCloseFile( hGifFile );
+#endif
+}
+
+/************************************************************************/
+/*                          myEGifCloseFile()                           */
+/************************************************************************/
+
+int GIFAbstractDataset::myEGifCloseFile( GifFileType *hGifFile )
+{
+#if defined(GIFLIB_MAJOR) && ((GIFLIB_MAJOR == 5 && GIFLIB_MINOR >= 1) || GIFLIB_MAJOR > 5)
+    int nErrorCode;
+    return EGifCloseFile( hGifFile, &nErrorCode );
+#else
+    return EGifCloseFile( hGifFile );
+#endif
 }

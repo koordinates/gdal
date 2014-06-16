@@ -2518,10 +2518,10 @@ GDALDataset *ECWDataset::Open( GDALOpenInfo * poOpenInfo, int bIsJPEG2000 )
             poDS->bGeoTransformValid |= 
                 GDALReadWorldFile2( osFilename, NULL,
                                     poDS->adfGeoTransform,
-                                    poOpenInfo->papszSiblingFiles, NULL )
+                                    poOpenInfo->GetSiblingFiles(), NULL )
                 || GDALReadWorldFile2( osFilename, ".wld",
                                     poDS->adfGeoTransform,
-                                    poOpenInfo->papszSiblingFiles, NULL );
+                                    poOpenInfo->GetSiblingFiles(), NULL );
         }
     }
 
@@ -2677,12 +2677,12 @@ void ECWDataset::WriteFileMetaData(NCSFileMetaData* pFileMetaDataCopy)
 /*                                                                      */
 /*      Set the dataset pszProjection string in OGC WKT format by       */
 /*      looking up the ECW (GDT) coordinate system info in              */
-/*      ecw_cs.dat support data file.                                   */
+/*      ecw_cs.wkt support data file.                                   */
 /*                                                                      */
 /*      This code is likely still broken in some circumstances.  For    */
 /*      instance, I haven't been careful about changing the linear      */
 /*      projection parameters (false easting/northing) if the units     */
-/*      is feet.  Lots of cases missing here, and in ecw_cs.dat.        */
+/*      is feet.  Lots of cases missing here, and in ecw_cs.wkt.        */
 /************************************************************************/
 
 void ECWDataset::ECW2WKTProjection()
@@ -3136,6 +3136,7 @@ void GDALRegister_ECW()
         poDriver = new GDALDriver();
         
         poDriver->SetDescription( "ECW" );
+        poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
 
         CPLString osLongName = "ERDAS Compressed Wavelets (SDK ";
 
@@ -3235,6 +3236,7 @@ void GDALRegister_JP2ECW()
         poDriver = new GDALDriver();
         
         poDriver->SetDescription( "JP2ECW" );
+        poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
 
         CPLString osLongName = "ERDAS JPEG2000 (SDK ";
 

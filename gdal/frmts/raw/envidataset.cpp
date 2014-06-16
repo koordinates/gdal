@@ -673,7 +673,8 @@ void ENVIDataset::WriteProjectionInfo()
 /*      Minimal case - write out simple geotransform if we have a       */
 /*      non-default geotransform.                                       */
 /* -------------------------------------------------------------------- */
-    if( pszProjection == NULL || strlen(pszProjection) == 0 )
+    if( pszProjection == NULL || strlen(pszProjection) == 0  ||
+        (strlen(pszProjection) >= 8 && strncmp(pszProjection, "LOCAL_CS", 8) == 0 ) )
     {
         if( adfGeoTransform[0] != 0.0 || adfGeoTransform[1] != 1.0
             || adfGeoTransform[2] != 0.0 || adfGeoTransform[3] != 0.0
@@ -1932,7 +1933,8 @@ GDALDataset *ENVIDataset::Open( GDALOpenInfo * poOpenInfo )
     else
 	pszMode = "r";
     
-    if (poOpenInfo->papszSiblingFiles == NULL)
+    char** papszSiblingFiles = poOpenInfo->GetSiblingFiles();
+    if (papszSiblingFiles == NULL)
     {
         osHdrFilename = CPLResetExtension( poOpenInfo->pszFilename, "hdr" );
         fpHeader = VSIFOpenL( osHdrFilename, pszMode );
@@ -1967,21 +1969,21 @@ GDALDataset *ENVIDataset::Open( GDALOpenInfo * poOpenInfo )
         CPLString osPath = CPLGetPath( poOpenInfo->pszFilename );
         CPLString osName = CPLGetFilename( poOpenInfo->pszFilename );
 
-        int iFile = CSLFindString(poOpenInfo->papszSiblingFiles, 
+        int iFile = CSLFindString(papszSiblingFiles, 
                                   CPLResetExtension( osName, "hdr" ) );
         if( iFile >= 0 )
         {
-            osHdrFilename = CPLFormFilename( osPath, poOpenInfo->papszSiblingFiles[iFile], 
+            osHdrFilename = CPLFormFilename( osPath, papszSiblingFiles[iFile], 
                                              NULL );
             fpHeader = VSIFOpenL( osHdrFilename, pszMode );
         }
         else
         {
-            iFile = CSLFindString(poOpenInfo->papszSiblingFiles,
+            iFile = CSLFindString(papszSiblingFiles,
                                   CPLFormFilename( NULL, osName, "hdr" ));
             if( iFile >= 0 )
             {
-                osHdrFilename = CPLFormFilename( osPath, poOpenInfo->papszSiblingFiles[iFile], 
+                osHdrFilename = CPLFormFilename( osPath, papszSiblingFiles[iFile], 
                                                  NULL );
                 fpHeader = VSIFOpenL( osHdrFilename, pszMode );
             }
@@ -2708,6 +2710,7 @@ void GDALRegister_ENVI()
         poDriver = new GDALDriver();
         
         poDriver->SetDescription( "ENVI" );
+        poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
         poDriver->SetMetadataItem( GDAL_DMD_LONGNAME, 
                                    "ENVI .hdr Labelled" );
         poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC, 

@@ -31,6 +31,7 @@
 #include "ogr_geopackage.h"
 #include "ogrgeopackageutility.h"
 #include "ogr_p.h"
+#include "swq.h"
 
 /* 1.1.1: A GeoPackage SHALL contain 0x47503130 ("GP10" in ASCII) in the application id */
 /* http://opengis.github.io/geopackage/#_file_format */
@@ -40,33 +41,6 @@
 /* "GP10" in ASCII bytes */
 static const char aGpkgId[4] = {0x47, 0x50, 0x31, 0x30};
 static const size_t szGpkgIdPos = 68;
-
-/* Cannnot count on the "PRAGMA application_id" command existing */
-/* it is a very recent addition to SQLite. */
-bool OGRGeoPackageDataSource::CheckApplicationId(const char * pszFileName)
-{
-    CPLAssert( hDB == NULL );
-    
-    char aFileId[4];
-
-    VSILFILE *fp = VSIFOpenL( pszFileName, "rb" );
-
-    /* Should never happen (always called after existence check) but just in case */
-    if ( ! fp ) return FALSE;
-
-    /* application_id is 4 bytes at offset 68 in the header */
-    VSIFSeekL(fp, szGpkgIdPos, SEEK_SET);
-    VSIFReadL(aFileId, 4, 1, fp);
-
-    VSIFCloseL(fp);
-    
-    for ( int i = 0; i < 4; i++ )
-    {
-        if ( aFileId[i] != aGpkgId[i] )
-            return FALSE;
-    }
-    return TRUE;
-}
 
 /* Only recent versions of SQLite will let us muck with application_id */
 /* via a PRAGMA statement, so we have to write directly into the */
@@ -388,26 +362,6 @@ int OGRGeoPackageDataSource::Open(const char * pszFilename, int bUpdateIn )
     bUpdate = bUpdateIn;
     pszName = CPLStrdup( pszFilename );
 
-    /* Requirement 3: File name has to end in "gpkg" */
-    /* http://opengis.github.io/geopackage/#_file_extension_name */
-    int nLen = strlen(pszFilename);
-    if(! (nLen >= 5 && EQUAL(pszFilename + nLen - 5, ".gpkg")) )
-        return FALSE;
-
-    /* Check that the filename exists and is a file */
-    VSIStatBufL stat;
-    if( VSIStatL( pszFilename, &stat ) != 0 || !VSI_ISREG(stat.st_mode) )
-        return FALSE;
-
-    /* Requirement 2: A GeoPackage SHALL contain 0x47503130 ("GP10" in ASCII) */
-    /* in the application id */
-    /* http://opengis.github.io/geopackage/#_file_format */
-    if ( ! CheckApplicationId(pszFilename) )
-    {
-        CPLError( CE_Failure, CPLE_AppDefined, "bad application_id on '%s'", pszFilename);
-        return FALSE;
-    }
-
     /* See if we can open the SQLite database */
 #ifdef HAVE_SQLITE_VFS
     if (!OpenOrCreateDB((bUpdateIn) ? SQLITE_OPEN_READWRITE : SQLITE_OPEN_READONLY) )
@@ -697,14 +651,14 @@ OGRLayer* OGRGeoPackageDataSource::GetLayer( int iLayer )
 
 
 /************************************************************************/
-/*                           CreateLayer()                              */
+/*                          ICreateLayer()                              */
 /* Options:                                                             */
 /*   FID = primary key name                                             */
 /*   OVERWRITE = YES|NO, overwrite existing layer?                      */
 /*   SPATIAL_INDEX = YES|NO, TBD                                        */
 /************************************************************************/
 
-OGRLayer* OGRGeoPackageDataSource::CreateLayer( const char * pszLayerName,
+OGRLayer* OGRGeoPackageDataSource::ICreateLayer( const char * pszLayerName,
                                       OGRSpatialReference * poSpatialRef,
                                       OGRwkbGeometryType eGType,
                                       char **papszOptions )
@@ -820,7 +774,7 @@ OGRLayer* OGRGeoPackageDataSource::CreateLayer( const char * pszLayerName,
     {
         /* Requirement 27: The z value in a gpkg_geometry_columns table row */
         /* SHALL be one of 0 (none), 1 (mandatory), or 2 (optional) */
-        int bGeometryTypeHasZ = wkb25DBit & eGType;
+        int bGeometryTypeHasZ = (wkb25DBit & eGType) != 0;
 
         /* Update gpkg_geometry_columns with the table info */
         pszSQL = sqlite3_mprintf(
@@ -1440,6 +1394,30 @@ void OGRGeoPackageDisableSpatialIndex(sqlite3_context* pContext,
 }
 
 /************************************************************************/
+/*                       GPKG_hstore_get_value()                        */
+/************************************************************************/
+
+static
+void GPKG_hstore_get_value(sqlite3_context* pContext,
+                          int argc, sqlite3_value** argv)
+{
+    if( sqlite3_value_type (argv[0]) != SQLITE_TEXT ||
+        sqlite3_value_type (argv[1]) != SQLITE_TEXT )
+    {
+        sqlite3_result_null (pContext);
+        return;
+    }
+
+    const char* pszHStore = (const char*)sqlite3_value_text(argv[0]);
+    const char* pszSearchedKey = (const char*)sqlite3_value_text(argv[1]);
+    char* pszValue = OGRHStoreGetValue(pszHStore, pszSearchedKey);
+    if( pszValue != NULL )
+        sqlite3_result_text( pContext, pszValue, -1, CPLFree );
+    else
+        sqlite3_result_null( pContext );
+}
+
+/************************************************************************/
 /*                         OpenOrCreateDB()                             */
 /************************************************************************/
 
@@ -1448,6 +1426,10 @@ int OGRGeoPackageDataSource::OpenOrCreateDB(int flags)
     int bSuccess = OGRSQLiteBaseDataSource::OpenOrCreateDB(flags, FALSE);
     if( !bSuccess )
         return FALSE;
+
+#ifdef SPATIALITE_412_OR_LATER
+    InitNewSpatialite();
+#endif
 
     /* Used by RTree Spatial Index Extension */
     sqlite3_create_function(hDB, "ST_MinX", 1, SQLITE_ANY, NULL,
@@ -1476,6 +1458,10 @@ int OGRGeoPackageDataSource::OpenOrCreateDB(int flags)
                             OGRGeoPackageCreateSpatialIndex, NULL, NULL);
     sqlite3_create_function(hDB, "DisableSpatialIndex", 2, SQLITE_ANY, this,
                             OGRGeoPackageDisableSpatialIndex, NULL, NULL);
+
+    // HSTORE functions
+    sqlite3_create_function(hDB, "hstore_get_value", 2, SQLITE_ANY, NULL,
+                            GPKG_hstore_get_value, NULL, NULL);
 
     return TRUE;
 }

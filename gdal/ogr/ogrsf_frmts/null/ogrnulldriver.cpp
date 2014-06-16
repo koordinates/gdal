@@ -85,7 +85,7 @@ class OGRNULLDataSource : public OGRDataSource
     virtual int         GetLayerCount() { return nLayers; }
     virtual OGRLayer   *GetLayer( int );
 
-    virtual OGRLayer    *CreateLayer( const char *pszLayerName,
+    virtual OGRLayer    *ICreateLayer( const char *pszLayerName,
                                       OGRSpatialReference *poSRS,
                                       OGRwkbGeometryType eType,
                                       char **papszOptions );
@@ -120,6 +120,7 @@ OGRNULLLayer::OGRNULLLayer( const char *pszLayerName,
                             OGRwkbGeometryType eType )
 {
     poFeatureDefn = new OGRFeatureDefn(pszLayerName);
+    SetDescription( poFeatureDefn->GetName() );
     poFeatureDefn->SetGeomType(eType);
     poFeatureDefn->Reference();
 
@@ -191,10 +192,10 @@ OGRNULLDataSource::~OGRNULLDataSource()
 }
 
 /************************************************************************/
-/*                            CreateLayer()                             */
+/*                           ICreateLayer()                             */
 /************************************************************************/
 
-OGRLayer    *OGRNULLDataSource::CreateLayer( const char *pszLayerName,
+OGRLayer    *OGRNULLDataSource::ICreateLayer( const char *pszLayerName,
                                              OGRSpatialReference *poSRS,
                                              OGRwkbGeometryType eType,
                                              char **papszOptions )
