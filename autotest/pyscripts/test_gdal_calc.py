@@ -223,6 +223,35 @@ def test_gdal_calc_py_4():
     return 'success'
 
 
+###############################################################################
+# test calc results are in range of the output data type, not the input one.
+
+def test_gdal_calc_py_5():
+    if gdalnumeric_not_available:
+        return 'skip'
+
+    script_path = test_py_scripts.get_py_script('gdal_calc')
+    if script_path is None:
+        return 'skip'
+
+    # calc returns -1. that' in range of Int16, but not in range of Byte.
+    test_py_scripts.run_py_script(script_path, 'gdal_calc', '-A tmp/test_gdal_calc_py.tif --A_band 1 --calc=-1 --type=Int16 --overwrite --outfile tmp/test_gdal_calc_py_5_1.tif')
+
+    ds1 = gdal.Open('tmp/test_gdal_calc_py_5_1.tif')
+
+    if ds1 is None:
+        gdaltest.post_reason('ds1 not found')
+        return 'fail'
+
+    if ds1.GetRasterBand(1).Checksum() != 41236:
+        gdaltest.post_reason('ds1 wrong checksum')
+        return 'fail'
+
+    ds1 = None
+
+    return 'success'
+
+
 def test_gdal_calc_py_cleanup():
 
     lst = [ 'tmp/test_gdal_calc_py.tif',
@@ -234,6 +263,7 @@ def test_gdal_calc_py_cleanup():
             'tmp/test_gdal_calc_py_4_1.tif',
             'tmp/test_gdal_calc_py_4_2.tif',
             'tmp/test_gdal_calc_py_4_3.tif',
+            'tmp/test_gdal_calc_py_5_1.tif',
             ]
     for filename in lst:
         try:
@@ -248,6 +278,7 @@ gdaltest_list = [
     test_gdal_calc_py_2,
     test_gdal_calc_py_3,
     test_gdal_calc_py_4,
+    test_gdal_calc_py_5,
     test_gdal_calc_py_cleanup
     ]
 
