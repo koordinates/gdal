@@ -1,0 +1,3 @@
+# Kx: Dumb binary dependencies that don't have sonames
+libgdal-perl: binary-or-shlib-defines-rpath * /usr/local/libesri-filegdb-*
+libgdal-perl: binary-or-shlib-defines-rpath * /usr/local/libkakadu-*
