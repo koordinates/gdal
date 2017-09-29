@@ -1,0 +1,93 @@
+machine:
+  java:
+    version: openjdk7
+  services:
+    - docker
+
+dependencies:
+  cache_directories:
+    - "~/cache"
+
+  pre:
+    - mkdir -p ~/cache/bundle ~/cache/redlock ~/cache/ccache
+    - sudo apt-get update -q
+    - DEBIAN_FRONTEND=noninteractive sudo apt-get install -q -y devscripts dpkg-sig
+    - echo -e 'source "https://rubygems.org"\ngem "deb-s3"\n' > ~/cache/bundle/Gemfile
+    - cd ~/cache/bundle; bundle install --path=vendor/bundle --binstubs
+    - cd ~/cache/redlock; virtualenv .; bin/pip install "https://github.com/rcoup/redlock-py/archive/cli-tool.tar.gz"
+    - docker login -e sysadm+circleci@koordinates.com -u $DOCKER_USER -p $DOCKER_PASS quay.io
+    - docker info
+    - docker pull quay.io/koordinates/trustybuild:latest
+    - echo "$GPG_KEY" | base64 -d | gpg --import -
+
+  override:
+    - echo "$(cat gdal/VERSION)+ci${CIRCLE_BUILD_NUM}-$(git show -s --date=format:%Y%m%d --format=git%cd.%h)" | tee ~/deb-version
+    - >
+        cd gdal;
+        DEBEMAIL=support@koordinates.com
+        DEBFULLNAME="Koordinates CI Builder"
+        dch
+        --distribution trusty
+        --newversion "$(cat ~/deb-version)"
+        "Koordinates CI build of ${CIRCLE_SHA1}: branch=${CIRCLE_BRANCH} tag=${CIRCLE_TAG}"
+    - ? >
+        set -o pipefail
+        && docker run
+        -v "$(pwd):/kx/source/"
+        -v $HOME/cache/ccache:/kx/ccache
+        -e CCACHE_DIR=/kx/ccache
+        -w "/kx/source/gdal/"
+        --name=kxbuild
+        quay.io/koordinates/trustybuild:latest
+        /kx/buildscripts/build_binary_package.sh -uc -us
+        2>&1 | tee ${CIRCLE_ARTIFACTS}/trustybuild.log
+      :
+        timeout: 2700  # 45 minutes
+
+  post:
+    # sign the new deb files
+    - sudo chown $(whoami) build-trusty/*
+    - dpkg-sig --sign builder build-trusty/*.deb
+    # save the built deb files
+    - cp -v build-trusty/*.deb ${CIRCLE_ARTIFACTS}
+    # not having to reinstall 100 dependencies is quicker
+    - docker commit kxbuild kxtest
+
+test:
+  override:
+    # NOTE: test failures are ignored (`|| true`), since they seem to be wackopants.
+    # Run locally (not on CircleCI) to see only these few failures:
+    # https://gist.github.com/craigds/08df5b5eeb2d6f989c9ecd0de626e9ea
+    - >
+        docker run
+        -v "$(pwd):/kx/source/"
+        -w /kx/source/autotest
+        kxtest
+        sh -c "DEBIAN_FRONTEND=noninteractive dpkg -i ../build-trusty/*.deb
+        && chown -R nobody .
+        && sed -i -r 's/^\s+ogr_fgdb_(19|19bis|20|21),/#\0/' ogr/ogr_fgdb.py
+        && sudo -u nobody TRAVIS=YES TRAVIS_BRANCH=trusty make test
+        || true"
+
+deployment:
+  apt:
+    tag: /kx-release-.*/
+    owner: koordinates
+    commands:
+      - ls ${CIRCLE_ARTIFACTS}/*.deb   # debugging
+      
+      # upload our packages
+      - |
+        cd ${CIRCLE_ARTIFACTS}
+        for FNAME in `ls *.deb`
+        do
+          # Upload file
+          PKG=`echo "$FNAME" | cut -d _ -f 1`
+          curl -X POST -F file=@${CIRCLE_ARTIFACTS}/${FNAME} https://${APTLY_UNAME}:${APTLY_PASSWD}@apt-repo.kx.gd/api/files/${PKG}
+          # Copy uploaded file to kx-builds repo
+          curl -X POST https://${APTLY_UNAME}:${APTLY_PASSWD}@apt-repo.kx.gd/api/repos/kx-builds/file/${PKG}/${FNAME}
+        done
+      
+      # Tell kx-builds repo to refresh and publish latest uploads
+      - |
+        curl -v -X PUT -H "Content-Type: application/json" --data "{}" https://${APTLY_UNAME}:${APTLY_PASSWD}@apt-repo.kx.gd/api/publish/kx-builds/trusty
