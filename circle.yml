@@ -1,0 +1,88 @@
+machine:
+  java:
+    version: openjdk7
+  services:
+    - docker
+
+dependencies:
+  cache_directories:
+    - "~/cache"
+
+  pre:
+    - mkdir -p ~/cache/bundle ~/cache/redlock ~/cache/ccache
+    - sudo apt-get update -q
+    - DEBIAN_FRONTEND=noninteractive sudo apt-get install -q -y devscripts dpkg-sig
+    - echo -e 'source "https://rubygems.org"\ngem "deb-s3"\n' > ~/cache/bundle/Gemfile
+    - cd ~/cache/bundle; bundle install --path=vendor/bundle --binstubs
+    - cd ~/cache/redlock; virtualenv .; bin/pip install "https://github.com/rcoup/redlock-py/archive/cli-tool.tar.gz"
+    - docker login -e sysadm+circleci@koordinates.com -u $DOCKER_USER -p $DOCKER_PASS quay.io
+    - docker info
+    - docker pull quay.io/koordinates/trustybuild:latest
+    - echo "$GPG_KEY" | base64 -d | gpg --import -
+
+  override:
+    - echo "$(cat gdal/VERSION)+ci${CIRCLE_BUILD_NUM}-$(git show -s --date=format:%Y%m%d --format=git%cd.%h)" | tee ~/deb-version
+    - >
+        cd gdal;
+        DEBEMAIL=support@koordinates.com
+        DEBFULLNAME="Koordinates CI Builder"
+        dch
+        --distribution trusty
+        --newversion "$(cat ~/deb-version)"
+        "Koordinates CI build of ${CIRCLE_SHA1}: branch=${CIRCLE_BRANCH} tag=${CIRCLE_TAG}"
+    - ? >
+        set -o pipefail
+        && docker run
+        -v "$(pwd):/kx/source/"
+        -v $HOME/cache/ccache:/kx/ccache
+        -e CCACHE_DIR=/kx/ccache
+        -w "/kx/source/gdal/"
+        --name=kxbuild
+        quay.io/koordinates/trustybuild:latest
+        /kx/buildscripts/build_binary_package.sh -uc -us
+        2>&1 | tee ${CIRCLE_ARTIFACTS}/trustybuild.log
+      :
+        timeout: 2700  # 45 minutes
+
+  post:
+    # sign the new deb files
+    - sudo chown $(whoami) build-trusty/*
+    - dpkg-sig --sign builder build-trusty/*.deb
+    # save the built deb files
+    - cp -v build-trusty/*.deb ${CIRCLE_ARTIFACTS}
+    # not having to reinstall 100 dependencies is quicker
+    - docker commit kxbuild kxtest
+
+test:
+  override:
+    - >
+        docker run
+        -v "$(pwd):/kx/source/"
+        -w /kx/source/autotest
+        kxtest
+        sh -c "DEBIAN_FRONTEND=noninteractive dpkg -i ../build-trusty/*.deb
+        && chown -R nobody .
+        && sudo -u nobody TRAVIS=YES make test"
+
+deployment:
+  apt:
+    tag: /kx-release-.*/
+    owner: koordinates
+    commands:
+      - ~/cache/redlock/bin/redlock --redis=${REDIS_URL} lock --retry-count=120 --retry-delay=1000 KXDEB 60000 > kxdeb.lock
+      - >
+          ~/cache/bundle/bin/deb-s3
+          upload
+          --arch=all
+          --bucket=${APT_BUCKET}
+          --prefix=kx
+          --origin=${APT_BUCKET}/kx
+          --s3_region=ap-southeast-2
+          --codename=trusty
+          --component=all
+          --suite=trusty
+          --sign
+          --preserve-versions=true
+          --visibility=private
+          ${CIRCLE_ARTIFACTS}/*.deb
+      - ~/cache/redlock/bin/redlock --redis=${REDIS_URL} unlock KXDEB $(cat kxdeb.lock)
