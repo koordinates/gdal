@@ -1,0 +1,44 @@
+---
+steps:
+  - label: ':debian: Build & Package & Test'
+    command: ".buildkite/build.sh"
+    artifact_paths:
+      - "build-trusty/*"
+
+  - block: "Release?"
+    prompt: "Tag & Release to archive? Check the test results first!"
+
+  - label: ':git: Add git tag'
+    command: .buildkite/tag.sh
+    plugins:
+      docker#v1.4.0:
+        image: "${ECR}/ci-tools"
+        always-pull: true
+        workdir: /src
+        environment:
+          - GITHUB_TOKEN
+          - BUILDKITE_COMMIT
+          - BUILDKITE_BUILD_NUMBER
+          - BUILDKITE_BRANCH
+
+  - label: ':debian: Publish deb'
+    command:
+      - >
+        aptly-upload
+        --aptly-url https://apt-repo.kx.gd
+        --retries 3
+        --repo kx-builds
+        --series trusty
+        build-trusty/*.deb
+    retry:
+      automatic: true
+    plugins:
+      artifacts#v1.2.0:
+        download: "build-trusty/*.deb"
+      docker#v1.4.0:
+        image: "${ECR}/ci-tools"
+        always-pull: true
+        workdir: /src
+        environment:
+          - APTLY_UNAME
+          - APTLY_PASSWD
