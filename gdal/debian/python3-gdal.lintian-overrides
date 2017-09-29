@@ -1,0 +1,3 @@
+# Kx: Dumb binary dependencies that don't have sonames
+python3-gdal: binary-or-shlib-defines-rpath * /usr/local/libesri-filegdb-*
+python3-gdal: binary-or-shlib-defines-rpath * /usr/local/libkakadu-*

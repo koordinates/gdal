@@ -13,3 +13,6 @@
 .cproject
 .idea
 .vscode
+
+# koordinates
+/build-trusty/
