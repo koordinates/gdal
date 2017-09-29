@@ -1,0 +1,17 @@
+Description: Fix generation of classes documentation in Perl bindings doxygen stuff.
+Author: Francesco Paolo Lovergine <frankie@debian.org>
+Last-Update: 2018-01-02
+Forwarded: https://github.com/ajolma/Geo-GDAL-2.02/pull/1
+Applied-Upstream: https://github.com/ajolma/Geo-GDAL-2.02/commit/cf17a59dc1f6f14ef42047051d8efd10ffe266cc
+
+--- a/swig/perl/Doxyfile
++++ b/swig/perl/Doxyfile
+@@ -280,7 +280,7 @@ OPTIMIZE_OUTPUT_VHDL   = NO
+ # Note that for custom extensions you also need to set FILE_PATTERNS otherwise
+ # the files are not read by doxygen.
+ 
+-EXTENSION_MAPPING      =
++EXTENSION_MAPPING      = pm=C++
+ 
+ # If the MARKDOWN_SUPPORT tag is enabled then doxygen pre-processes all comments
+ # according to the Markdown format, which allows for more readable
