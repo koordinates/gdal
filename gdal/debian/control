@@ -66,7 +66,8 @@ Package: libgdal20
 Architecture: any
 Section: libs
 Depends: gdal-data (>= ${source:Version}),
-         libesri-filegdb (>= 1.5),
+         libesri-filegdb-1.5.1,
+         libkakadu-7.10.2,
          ${shlibs:Depends},
          ${misc:Depends}
 Recommends: proj-bin
@@ -126,7 +127,8 @@ Depends: libgdal20 (= ${binary:Version}),
          libxerces-c-dev,
          libxml2-dev,
          unixodbc-dev,
-         libesri-filegdb (>= 1.5),
+         libesri-filegdb-1.5.1,
+         libkakadu-7.10.2,
          ${misc:Depends}
 Suggests: libgdal-doc
 Description: Geospatial Data Abstraction Library - Development files
