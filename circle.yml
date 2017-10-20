@@ -63,7 +63,7 @@ test:
         sh -c "DEBIAN_FRONTEND=noninteractive dpkg -i ../build-trusty/*.deb
         && chown -R nobody .
         && sed -i -r 's/^\s+ogr_fgdb_(19|19bis|20|21),/#\0/' ogr/ogr_fgdb.py
-        && sudo -u nobody TRAVIS=YES make test"
+        && sudo -u nobody TRAVIS=YES TRAVIS_BRANCH=trusty make test"
 
 deployment:
   apt:
