@@ -75,8 +75,9 @@ deployment:
     owner: koordinates
     commands:
       - ls ${CIRCLE_ARTIFACTS}/*.deb   # debugging
+      
+      # upload our packages
       - |
-        # upload our packages
         cd ${CIRCLE_ARTIFACTS}
         for FNAME in `ls *.deb`
         do
@@ -86,6 +87,7 @@ deployment:
           # Copy uploaded file to kx-builds repo
           curl -X POST https://${APTLY_UNAME}:${APTLY_PASSWD}@apt-repo.kx.gd/api/repos/kx-builds/file/${PKG}/${FNAME}
         done
+      
+      # Tell kx-builds repo to refresh and publish latest uploads
       - |
-        # Tell kx-builds repo to refresh and publish latest uploads
         curl -v -X PUT -H "Content-Type: application/json" --data "{}" https://${APTLY_UNAME}:${APTLY_PASSWD}@apt-repo.kx.gd/api/publish/kx-builds/trusty
