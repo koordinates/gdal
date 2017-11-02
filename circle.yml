@@ -76,18 +76,8 @@ deployment:
     commands:
       - ls ${CIRCLE_ARTIFACTS}/*.deb   # debugging
       
-      # upload our packages
-      - |
-        cd ${CIRCLE_ARTIFACTS}
-        for FNAME in `ls *.deb`
-        do
-          # Upload file
-          PKG=`echo "$FNAME" | cut -d _ -f 1`
-          curl -X POST -F file=@${CIRCLE_ARTIFACTS}/${FNAME} https://${APTLY_UNAME}:${APTLY_PASSWD}@apt-repo.kx.gd/api/files/${PKG}
-          # Copy uploaded file to kx-builds repo
-          curl -X POST https://${APTLY_UNAME}:${APTLY_PASSWD}@apt-repo.kx.gd/api/repos/kx-builds/file/${PKG}/${FNAME}
-        done
-      
-      # Tell kx-builds repo to refresh and publish latest uploads
-      - |
-        curl -v -X PUT -H "Content-Type: application/json" --data "{}" https://${APTLY_UNAME}:${APTLY_PASSWD}@apt-repo.kx.gd/api/publish/kx-builds/trusty
+      - pip install aptly-uploader
+      # send to our aptly repo
+      - aptly-upload --aptly-url https://apt-repo.kx.gd --retries 3 --repo kx-builds --series trusty ${CIRCLE_ARTIFACTS}/*.deb :
+          # Can take ages (504 gateway timeout, followed by a couple retries)
+          timeout: 1200
