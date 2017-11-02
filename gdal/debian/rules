@@ -159,7 +159,13 @@ override_dh_auto_build:
 	$(MAKE) lib-target apps-target
 
 	# KX: build vsipreload.so
-	$(CXX) -Wl,-soname,libgdal_vsipreload.so.20 -Wall -fPIC -g $(CXXFLAGS) port/vsipreload.cpp $(LDFLAGS) -shared -o libgdal_vsipreload.so.20
+	$(CXX) -Wl,-soname,libgdal_vsipreload.so.20 \
+	    -Wall -fPIC $(CXXFLAGS) port/vsipreload.cpp \
+		$(LDFLAGS) -shared \
+		-o libgdal_vsipreload.so.20 \
+		-Iport -L. -L.libs \
+		-Wl,-Bstatic -lgdal \
+		-Wl,-Bdynamic -ldl -lpthread -lcurl
 
 	rm -rf $(CURDIR)/swig/perl/*.c  $(CURDIR)/swig/perl/*.cpp
 	$(MAKE) -C $(CURDIR)/swig/perl generate build doc
