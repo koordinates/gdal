@@ -179,7 +179,8 @@ Description: Documentation for the Geospatial Data Abstraction Library
 Package: gdal-bin
 Architecture: any
 Depends: ${shlibs:Depends},
-         ${misc:Depends}
+         ${misc:Depends},
+         libgdal20 (= ${source:Version})
 Suggests: libgdal-grass,
           python-gdal
 Breaks: gdal-bin (<< 1.10.0-0~)
@@ -231,7 +232,8 @@ Architecture: any
 Section: python
 Depends: ${python:Depends},
          ${shlibs:Depends},
-         ${misc:Depends}
+         ${misc:Depends},
+         libgdal20 (= ${source:Version})
 Suggests: gdal-bin
 Provides: ${python:Provides}
 Description: Python bindings to the Geospatial Data Abstraction Library
@@ -259,7 +261,8 @@ Architecture: any
 Section: python
 Depends: ${python3:Depends},
          ${shlibs:Depends},
-         ${misc:Depends}
+         ${misc:Depends},
+         libgdal20 (= ${source:Version})
 Suggests: gdal-bin
 Provides: ${python3:Provides}
 Description: Python 3 bindings to the Geospatial Data Abstraction Library
