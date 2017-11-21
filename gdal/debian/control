@@ -71,6 +71,7 @@ Depends: gdal-data (>= ${source:Version}),
          ${shlibs:Depends},
          ${misc:Depends}
 Recommends: proj-bin
+Replaces: libgdal1h
 Breaks: libgdal1h (<< 2.0)
 Provides: gdal-abi-2-3-0
 Description: Geospatial Data Abstraction Library
