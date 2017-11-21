@@ -4,4 +4,3 @@ usr/lib/libgdal.a
 usr/lib/libgdal.so
 usr/lib/pkgconfig/gdal.pc
 usr/share/man/man1/gdal-config.1
-usr/lib/libgdal_vsipreload.so
