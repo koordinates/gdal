@@ -158,15 +158,6 @@ override_dh_auto_build:
 	cp `ls GDALmake.opt-*|tail -1` GDALmake.opt
 	$(MAKE) lib-target apps-target
 
-	# KX: build vsipreload.so
-	$(CXX) -Wl,-soname,libgdal_vsipreload.so.20 \
-	    -Wall -fPIC $(CXXFLAGS) port/vsipreload.cpp \
-		$(LDFLAGS) -shared \
-		-o libgdal_vsipreload.so.20 \
-		-Iport -L. -L.libs \
-		-Wl,-Bstatic -lgdal \
-		-Wl,-Bdynamic -ldl -lpthread -lcurl
-
 	rm -rf $(CURDIR)/swig/perl/*.c  $(CURDIR)/swig/perl/*.cpp
 	$(MAKE) -C $(CURDIR)/swig/perl generate build doc
 	$(MAKE) -C $(CURDIR)/swig/java clean generate build
@@ -194,10 +185,6 @@ override_dh_auto_install:
 	$(MAKE) install-man DESTDIR=$(CURDIR)/debian/tmp \
 		"INST_DOCS=\$$(prefix)/share/doc/libgdal-doc"\
 		"INST_MAN=\$$(prefix)/share/man"
-
-	# KX: Install vsipreload
-	cp libgdal_vsipreload.so.20 $(CURDIR)/debian/tmp/usr/lib/libgdal_vsipreload.so.20
-	ln -s "libgdal_vsipreload.so.20" $(CURDIR)/debian/tmp/usr/lib/libgdal_vsipreload.so
 
 	# install python stuff previuosly built and pre-installed
 	cp -a $(CURDIR)/debian/python-tmp/usr/lib/* $(CURDIR)/debian/tmp/usr/lib/.
