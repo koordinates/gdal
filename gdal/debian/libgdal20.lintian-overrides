@@ -1,9 +1,6 @@
 # False positive on: {136, "Socialist Republic of Viet Nam"},
 libgdal20: spelling-error-in-binary * Nam Name
 
-# Kx: We're the only ones who use vsipreload
-libgdal20: non-dev-pkg-with-shlib-symlink usr/lib/libgdal_vsipreload.so.20 usr/lib/libgdal_vsipreload.so
-
 # Kx: Using internal versions of stuff
 libgdal20: embedded-library * libjpeg
 libgdal20: embedded-library * tiff
