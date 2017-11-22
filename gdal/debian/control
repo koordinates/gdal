@@ -72,8 +72,7 @@ Depends: gdal-data (>= ${source:Version}),
          ${misc:Depends}
 Recommends: proj-bin
 Replaces: libgdal1h
-Breaks: libgdal1h (<< 2.0)
-Provides: gdal-abi-2-3-0
+Provides: gdal-abi-2-3-0, libgdal1h
 Description: Geospatial Data Abstraction Library
  GDAL is a translator library for raster geospatial data formats.
  As a library, it presents a single abstract data model to the
