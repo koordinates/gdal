@@ -2452,8 +2452,21 @@ def ogr_mitab_47():
 
     return 'success'
 
+
 ###############################################################################
-#
+# Test reading an aspatial TAB file.
+
+def ogr_mitab_49_aspatial():
+
+    ds = ogr.GetDriverByName('MapInfo File').Open('data/mitab/aspatial.tab')
+    lyr = ds.GetLayer(0)
+
+    geom_type = lyr.GetLayerDefn().GetGeomType()
+    if geom_type != ogr.wkbNone:
+        return 'fail'
+
+    return 'success'
+
 
 def ogr_mitab_cleanup():
 
@@ -2517,6 +2530,7 @@ gdaltest_list = [
     ogr_mitab_45,
     ogr_mitab_46,
     ogr_mitab_47,
+    ogr_mitab_49_aspatial,
     ogr_mitab_cleanup
     ]
 
