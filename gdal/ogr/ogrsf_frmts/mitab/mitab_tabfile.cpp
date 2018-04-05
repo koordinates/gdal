@@ -2394,7 +2394,8 @@ OGRErr TABFile::GetExtent (OGREnvelope *psExtent,
 {
     TABMAPHeaderBlock *poHeader = NULL;
 
-    if (m_poMAPFile && (poHeader=m_poMAPFile->GetHeaderBlock()) != NULL)
+    if (m_poMAPFile && (poHeader=m_poMAPFile->GetHeaderBlock()) != NULL &&
+        GetGeomType() != wkbNone)
     {
         double dX0 = 0.0;
         double dX1 = 0.0;

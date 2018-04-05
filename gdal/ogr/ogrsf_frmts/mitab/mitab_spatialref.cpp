@@ -651,6 +651,9 @@ OGRSpatialReference *TABFile::GetSpatialRef()
         return NULL;
     }
 
+    if( GetGeomType() == wkbNone )
+        return nullptr;
+
     /*-----------------------------------------------------------------
      * If projection params have already been processed, just use them.
      *----------------------------------------------------------------*/
