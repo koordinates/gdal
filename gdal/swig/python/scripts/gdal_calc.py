@@ -217,6 +217,8 @@ def doit(opts, args):
         else:
             myOutType = opts.type
 
+        numpyOutType = gdalnumeric.codes[gdal.GetDataTypeByName(myOutType)]
+
         # create file
         myOutDrv = gdal.GetDriverByName(opts.format)
         myOut = myOutDrv.Create(
@@ -325,6 +327,9 @@ def doit(opts, args):
                     myval = gdalnumeric.BandReadAsArray(myFiles[i].GetRasterBand(myBandNo),
                                                         xoff=myX, yoff=myY,
                                                         win_xsize=nXValid, win_ysize=nYValid)
+
+                    if numpyOutType != myval.dtype:
+                        myval = myval.astype(numpyOutType)
 
                     # fill in nodata values
                     if myNDV[i] is not None:
