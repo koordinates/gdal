@@ -306,8 +306,28 @@ def test_gdal_calc_py_7():
     ds3 = None
     ds4 = None
 
-def test_gdal_calc_py_cleanup():
+###############################################################################
+# test calc results are in range of the output data type, not the input one.
 
+def test_gdal_calc_py_8():
+    if gdalnumeric_not_available:
+        pytest.skip()
+
+    script_path = test_py_scripts.get_py_script('gdal_calc')
+    if script_path is None:
+        pytest.skip()
+
+    # calc returns -1. that' in range of Int16, but not in range of Byte.
+    test_py_scripts.run_py_script(script_path, 'gdal_calc', '-A tmp/test_gdal_calc_py.tif --A_band 1 --calc=-1 --type=Int16 --overwrite --outfile tmp/test_gdal_calc_py_8_1.tif')
+
+    ds1 = gdal.Open('tmp/test_gdal_calc_py_8_1.tif')
+
+    assert ds1 is not None
+    assert ds1.GetRasterBand(1).Checksum() == 41236
+    ds1 = None
+
+
+def test_gdal_calc_py_cleanup():
     lst = ['tmp/test_gdal_calc_py.tif',
            'tmp/test_gdal_calc_py_1_1.tif',
            'tmp/test_gdal_calc_py_1_2.tif',
