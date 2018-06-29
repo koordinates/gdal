@@ -5,7 +5,7 @@ Forwarded: not-needed
 
 --- a/GDALmake.opt.in
 +++ b/GDALmake.opt.in
-@@ -422,7 +422,7 @@ endif
+@@ -420,7 +420,7 @@ endif
  # PCRaster support
  PCRASTER_SETTING	=	@PCRASTER_SETTING@
  
