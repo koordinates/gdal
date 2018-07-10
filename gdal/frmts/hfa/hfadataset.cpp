@@ -283,7 +283,8 @@ HFARasterAttributeTable::HFARasterAttributeTable(
     nRows(0),
     bLinearBinning(false),
     dfRow0Min(0.0),
-    dfBinSize(0.0)
+    dfBinSize(0.0),
+    eTableType(GRTT_THEMATIC)
 {
     if( poDT != nullptr )
     {
@@ -414,7 +415,7 @@ HFARasterAttributeTable::~HFARasterAttributeTable() {}
 /*                              Clone()                                 */
 /************************************************************************/
 
-GDALDefaultRasterAttributeTable *HFARasterAttributeTable::Clone() const
+GDALRasterAttributeTable *HFARasterAttributeTable::Clone() const
 {
     if( (GetRowCount() * GetColumnCount()) > RAT_MAX_ELEM_FOR_CLONE )
         return nullptr;
@@ -505,6 +506,8 @@ GDALDefaultRasterAttributeTable *HFARasterAttributeTable::Clone() const
 
     if( bLinearBinning )
         poRAT->SetLinearBinning(dfRow0Min, dfBinSize);
+
+    poRAT->SetTableType(this->GetTableType());
 
     return poRAT;
 }
@@ -1565,8 +1568,7 @@ void HFARasterAttributeTable::SetRowCount( int iCount )
 /************************************************************************/
 /*                          GetRowOfValue()                             */
 /************************************************************************/
-
-int HFARasterAttributeTable::GetRowOfValue( double dfValue ) const
+ int HFARasterAttributeTable::GetRowOfValue( double dfValue ) const
 {
     // Handle case of regular binning.
     if( bLinearBinning )
@@ -1575,23 +1577,18 @@ int HFARasterAttributeTable::GetRowOfValue( double dfValue ) const
             static_cast<int>(floor((dfValue - dfRow0Min) / dfBinSize));
         if( iBin < 0 || iBin >= nRows )
             return -1;
-
-        return iBin;
+         return iBin;
     }
-
-    // Do we have any information?
+     // Do we have any information?
     int nMinCol = GetColOfUsage(GFU_Min);
     if( nMinCol == -1 )
         nMinCol = GetColOfUsage(GFU_MinMax);
-
-    int nMaxCol = GetColOfUsage(GFU_Max);
+     int nMaxCol = GetColOfUsage(GFU_Max);
     if( nMaxCol == -1 )
         nMaxCol = GetColOfUsage(GFU_MinMax);
-
-    if( nMinCol == -1 && nMaxCol == -1 )
+     if( nMinCol == -1 && nMaxCol == -1 )
         return -1;
-
-    // Search through rows for match.
+     // Search through rows for match.
     for( int iRow = 0; iRow < nRows; iRow++ )
     {
         if( nMinCol != -1 )
@@ -1599,31 +1596,25 @@ int HFARasterAttributeTable::GetRowOfValue( double dfValue ) const
             while( iRow < nRows &&
                    dfValue < GetValueAsDouble(iRow, nMinCol) )
                 iRow++;
-
-            if( iRow == nRows )
+             if( iRow == nRows )
                 break;
         }
-
-        if( nMaxCol != -1 )
+         if( nMaxCol != -1 )
         {
             if( dfValue > GetValueAsDouble(iRow, nMaxCol) )
                 continue;
         }
-
-        return iRow;
+         return iRow;
     }
-
-    return -1;
+     return -1;
 }
-
-/************************************************************************/
+ /************************************************************************/
 /*                          GetRowOfValue()                             */
 /*                                                                      */
 /*      Int arg for now just converted to double.  Perhaps we will      */
 /*      handle this in a special way some day?                          */
 /************************************************************************/
-
-int HFARasterAttributeTable::GetRowOfValue( int nValue ) const
+ int HFARasterAttributeTable::GetRowOfValue( int nValue ) const
 {
     return GetRowOfValue(static_cast<double>(nValue));
 }
@@ -1813,6 +1804,60 @@ CPLXMLNode *HFARasterAttributeTable::Serialize() const
         return nullptr;
 
     return GDALRasterAttributeTable::Serialize();
+}
+
+/************************************************************************/
+/*                              SetTableType()                             */
+/************************************************************************/
+
+CPLErr HFARasterAttributeTable::SetTableType(const GDALRATTableType eInTableType)
+{
+    eTableType = eInTableType;
+    return CE_None;
+}
+
+/************************************************************************/
+/*                              GetTableType()                             */
+/************************************************************************/
+
+GDALRATTableType HFARasterAttributeTable::GetTableType() const
+{
+    return eTableType;
+}
+
+void HFARasterAttributeTable::RemoveStatistics()
+{
+    // since we are storing the fields in a vector it will generally
+    // be faster to create a new vector and replace the old one
+    // rather than actually erasing columns.
+    std::vector<HFAAttributeField> aoNewFields;
+    for ( const auto& field : aoFields )
+    {
+        switch (field.eUsage)
+        {
+            case GFU_PixelCount:
+            case GFU_Min:
+            case GFU_Max:
+            case GFU_RedMin:
+            case GFU_GreenMin:
+            case GFU_BlueMin:
+            case GFU_AlphaMin:
+            case GFU_RedMax:
+            case GFU_GreenMax:
+            case GFU_BlueMax:
+            case GFU_AlphaMax:
+            {
+                break;
+            }
+
+            default:
+                if (field.sName != "Histogram")
+                {
+                    aoNewFields.push_back(field);
+                }
+        }
+    }
+    aoFields = aoNewFields;
 }
 
 /************************************************************************/
@@ -2135,6 +2180,17 @@ void HFARasterBand::ReadAuxMetadata()
           break;
           default:
             CPLAssert(false);
+        }
+    }
+
+    /* if we have a default RAT we can now set its thematic/athematic state
+       from the metadata we just read in */
+    if ( GetDefaultRAT() )
+    {
+        const char * psLayerType = GetMetadataItem( "LAYER_TYPE","" );
+        if (psLayerType)
+        {
+            GetDefaultRAT()->SetTableType(EQUALN(psLayerType,"athematic",9)?GRTT_ATHEMATIC:GRTT_THEMATIC);
         }
     }
 }
@@ -2674,7 +2730,7 @@ CPLErr HFARasterBand::SetColorTable( GDALColorTable *poCTable )
     /*      truncate the colour table. Helps when RATs travel via GTiff.    */
     /* -------------------------------------------------------------------- */
     const GDALRasterAttributeTable *poRAT = GetDefaultRAT();
-    if (poRAT != NULL && poRAT->GetRowCount() > 0 && poRAT->GetRowCount() < nColors)
+    if (poRAT != nullptr && poRAT->GetRowCount() > 0 && poRAT->GetRowCount() < nColors)
     {
         bool match = true;
         const GDALColorEntry *color1 = poCTable->GetColorEntry(poRAT->GetRowCount());
@@ -2980,7 +3036,13 @@ CPLErr HFARasterBand::SetDefaultRAT( const GDALRasterAttributeTable * poRAT )
     if( poRAT == nullptr )
         return CE_Failure;
 
-    return WriteNamedRAT("Descriptor_Table", poRAT);
+    poDefaultRAT = nullptr;
+
+    CPLErr r = WriteNamedRAT("Descriptor_Table", poRAT);
+    if (!r)
+        GetDefaultRAT();
+
+    return r;
 }
 
 /************************************************************************/
@@ -5837,15 +5899,19 @@ HFADataset::CreateCopy( const char *pszFilename, GDALDataset *poSrcDS,
     if( poDS == nullptr )
         return nullptr;
 
-    // Does the source have a PCT for any of the bands?  If so, copy it over.
+    // Does the source have a PCT or RAT for any of the bands?  If so, copy it over.
     for( int iBand = 0; iBand < nBandCount; iBand++ )
     {
         GDALRasterBand *poBand = poSrcDS->GetRasterBand(iBand + 1);
+
         GDALColorTable *poCT = poBand->GetColorTable();
         if( poCT != nullptr )
         {
             poDS->GetRasterBand(iBand + 1)->SetColorTable(poCT);
         }
+
+        if( poBand->GetDefaultRAT() != nullptr )
+            poDS->GetRasterBand(iBand+1)->SetDefaultRAT( poBand->GetDefaultRAT() );
     }
 
     // Do we have metadata for any of the bands or the dataset as a whole?
