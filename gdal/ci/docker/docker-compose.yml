@@ -1,0 +1,20 @@
+---
+version: '3'
+services:
+  gdal:
+    image: gdal-deps:trusty_clang
+    build:
+      context: .
+      dockerfile: Dockerfile.trusty_clang
+    volumes:
+      - ../../../:/src/
+      - ../../../.ccache/:/ccache/
+    tmpfs:
+      - /tmp
+    environment:
+      CI: "true"
+      TRAVIS: "true"
+      CONTINUOUS_INTEGRATION: "true"
+      BUILD_NAME: trusty_clang
+    stdin_open: true
+    tty: true
