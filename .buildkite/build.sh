@@ -46,17 +46,19 @@ echo "--- Running tests ..."
 TEST_CONTAINER="test-${BUILDKITE_JOB_ID}"
 docker commit "${BUILD_CONTAINER}" "${TEST_CONTAINER}"
 R=0
-time docker run \
+time docker run --rm -i \
   -v "$(pwd):/src" \
   -w "/src/autotest" \
   "${TEST_CONTAINER}" \
-  /bin/bash -e << EOF || R=$?
+  /bin/bash -exs << EOF || R=$?
 DEBIAN_FRONTEND=noninteractive dpkg -i ../build-trusty/*.deb
 chown -R nobody .
 # ignore some known failures
 sed -i -r 's/^\s+ogr_fgdb_(19|19bis|20|21),/#\0/' ogr/ogr_fgdb.py
 sudo -u nobody TRAVIS=YES TRAVIS_BRANCH=trusty make test
 EOF
+
+docker rm "${BUILD_CONTAINER}"
 
 if [ $R -ne 0 ]; then
   echo "⚠️ Errors running GDAL tests ($R). But this is kinda expected."
