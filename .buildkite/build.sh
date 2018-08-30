@@ -51,7 +51,7 @@ time docker run --rm -i \
   -w "/src/autotest" \
   "${TEST_CONTAINER}" \
   /bin/bash -exs << EOF || R=$?
-DEBIAN_FRONTEND=noninteractive dpkg -i ../build-trusty/*.deb
+DEBIAN_FRONTEND=noninteractive dpkg -i ../build-trusty/{gdal-bin,gdal-data,libgdal20,python-gdal,python3-gdal}*.deb
 chown -R nobody .
 # ignore some known failures
 sed -i -r 's/^\s+ogr_fgdb_(19|19bis|20|21),/#\0/' ogr/ogr_fgdb.py
