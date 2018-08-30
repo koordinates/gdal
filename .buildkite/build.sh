@@ -27,10 +27,10 @@ echo "--- Building debian package ..."
 # Uses a docker volume for ccache
 time docker run \
   --name "${BUILD_CONTAINER}" \
-  -v "$(pwd):/src" \
+  -v "$(pwd):/kx/source" \
   -v "ccache:/ccache" \
   -e CCACHE_DIR=/ccache \
-  -w "/src/gdal" \
+  -w "/kx/source/gdal" \
   "${ECR}/trustybuild:latest" \
     /kx/buildscripts/build_binary_package.sh -uc -us
 
