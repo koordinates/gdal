@@ -7,26 +7,26 @@ steps:
 
   - wait
 
-  # - label: ':debian: Publish deb'
-  #   command:
-  #     - >
-  #       if [ "$BUILDKITE_TAG" ~= ^kx-release- ]; then
-  #       aptly-upload
-  #       --aptly-url https://apt-repo.kx.gd
-  #       --retries 3
-  #       --repo kx-builds
-  #       --series trusty
-  #       *.deb;
-  #       fi
-  #   retry:
-  #     automatic: true
-  #   plugins:
-  #     artifacts#v1.2.0:
-  #       download: "build-trusty/*.deb"
-  #     docker#v1.4.0:
-  #       image: "${ECR}/ci-tools"
-  #       always-pull: true
-  #       workdir: /src/build-trusty
-  #       environment:
-  #         - APTLY_UNAME
-  #         - APTLY_PASSWD
+  - label: ':debian: Publish deb'
+    command:
+      - >
+        if [ "$BUILDKITE_TAG" ~= ^kx-release- ]; then
+        aptly-upload
+        --aptly-url https://apt-repo.kx.gd
+        --retries 3
+        --repo kx-builds
+        --series trusty
+        *.deb;
+        fi
+    retry:
+      automatic: true
+    plugins:
+      artifacts#v1.2.0:
+        download: "build-trusty/*.deb"
+      docker#v1.4.0:
+        image: "${ECR}/ci-tools"
+        always-pull: true
+        workdir: /src/build-trusty
+        environment:
+          - APTLY_UNAME
+          - APTLY_PASSWD
