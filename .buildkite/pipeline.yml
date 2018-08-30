@@ -5,19 +5,20 @@ steps:
     artifact_paths:
       - "build-trusty/*"
 
-  - wait
+  - block: "Release"
+    prompt: "Release ${BUILDKITE_TAG} to Aptly?"
+    branches: "kx-release-*"
 
   - label: ':debian: Publish deb'
+    branches: "kx-release-*"
     command:
       - >
-        if [ "$BUILDKITE_TAG" ~= ^kx-release- ]; then
         aptly-upload
         --aptly-url https://apt-repo.kx.gd
         --retries 3
         --repo kx-builds
         --series trusty
-        *.deb;
-        fi
+        *.deb
     retry:
       automatic: true
     plugins:
