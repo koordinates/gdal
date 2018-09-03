@@ -5,7 +5,7 @@ steps:
     artifact_paths:
       - "build-trusty/*"
 
-  - block: "Release"
+  - block: "Release?"
     prompt: "Tag & Release to archive?"
 
   - label: ':git: Add git tag'
