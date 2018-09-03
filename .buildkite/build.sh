@@ -12,8 +12,12 @@ export DEBFULLNAME="Koordinates CI Builder"
 
 echo "Updating changelog..."
 
-DEB_VERSION="$(cat gdal/VERSION)+ci${BUILDKITE_BUILD_NUMBER}-$(git show -s --date=format:%Y%m%d --format=git%cd.%h)"
+DEB_BASE_VERSION=$(cat gdal/VERSION)
+DEB_VERSION="${DEB_BASE_VERSION}+ci${BUILDKITE_BUILD_NUMBER}-$(git show -s --date=format:%Y%m%d --format=git%cd.%h)"
 echo "Debian Package Version: ${DEB_VERSION}"
+
+buildkite-agent meta-data set deb-base-version "$DEB_BASE_VERSION"
+buildkite-agent meta-data set deb-version "$DEB_VERSION"
 
 time docker run \
   -v "$(pwd):/src" \

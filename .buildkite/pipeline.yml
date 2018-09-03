@@ -6,11 +6,24 @@ steps:
       - "build-trusty/*"
 
   - block: "Release"
-    prompt: "Release ${BUILDKITE_TAG} to Aptly?"
-    branches: "kx-release-*"
+    prompt: "Tag & Release to archive?"
+
+  - label: ':git: Add git tag'
+    command:
+      - >
+        hub release create -t "${BUILDKITE_COMMIT}"
+        "kx-release-$(buildkite-agent metadata get deb-base-version)+ci${BUILDKITE_BUILD_NUMBER}"
+    plugins:
+      docker#v1.4.0:
+        image: "${ECR}/ci-tools"
+        always-pull: true
+        workdir: /src
+        environment:
+          - GITHUB_TOKEN
+          - BUILDKITE_COMMIT
+          - BUILDKITE_BUILD_NUMBER
 
   - label: ':debian: Publish deb'
-    branches: "kx-release-*"
     command:
       - >
         aptly-upload
@@ -18,7 +31,7 @@ steps:
         --retries 3
         --repo kx-builds
         --series trusty
-        *.deb
+        build-trusty/*.deb
     retry:
       automatic: true
     plugins:
@@ -27,7 +40,7 @@ steps:
       docker#v1.4.0:
         image: "${ECR}/ci-tools"
         always-pull: true
-        workdir: /src/build-trusty
+        workdir: /src
         environment:
           - APTLY_UNAME
           - APTLY_PASSWD
