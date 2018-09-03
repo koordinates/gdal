@@ -9,10 +9,7 @@ steps:
     prompt: "Tag & Release to archive?"
 
   - label: ':git: Add git tag'
-    command:
-      - >
-        hub release create -t "${BUILDKITE_COMMIT}"
-        "kx-release-$(buildkite-agent metadata get deb-base-version)+ci${BUILDKITE_BUILD_NUMBER}"
+    command: .buildkite/tag.sh
     plugins:
       docker#v1.4.0:
         image: "${ECR}/ci-tools"
@@ -22,6 +19,7 @@ steps:
           - GITHUB_TOKEN
           - BUILDKITE_COMMIT
           - BUILDKITE_BUILD_NUMBER
+          - BUILDKITE_BRANCH
 
   - label: ':debian: Publish deb'
     command:
