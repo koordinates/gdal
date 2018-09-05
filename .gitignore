@@ -3,3 +3,4 @@
 *.obj
 *.so
 *~
+/build-trusty/
