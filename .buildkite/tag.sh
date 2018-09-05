@@ -1,12 +1,12 @@
 #!/bin/bash
-set -e
+set -eu
 
 if [ -n "${KX_BUILD_DEBUG-}" ]; then
-  log "Enabling script debugging..."
+  echo "Enabling script debugging..."
   set -x
 fi
 
-DEB_BASE_VERSION="$(buildkite-agent metadata get deb-base-version)"
+DEB_BASE_VERSION="$(buildkite-agent meta-data get deb-base-version)"
 if [ -z "${DEB_BASE_VERSION}" ]; then
     echo "Missing deb-base-version: ${DEB_BASE_VERSION}"
     exit 2
@@ -15,7 +15,10 @@ elif [ "${BUILDKITE_COMMIT}" = "HEAD" ]; then
     exit 2
 fi
 
+TAG="kx-release-${DEB_BASE_VERSION}+ci${BUILDKITE_BUILD_NUMBER}"
+echo "Creating tag: ${TAG} for ${BUILDKITE_COMMIT} ..."
+
 hub release create \
     -t "${BUILDKITE_COMMIT}" \
-    -m "CI: ${BUILDKITE_BRANCH}" \
-    "kx-release-${DEB_BASE_VERSION}+ci${BUILDKITE_BUILD_NUMBER}"
+    -m "CI: ${BUILDKITE_BRANCH}.${BUILDKITE_BUILD_NUMBER}" \
+    "${TAG}"
