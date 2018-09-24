@@ -22,6 +22,8 @@ buildkite-agent meta-data set deb-version "$DEB_VERSION"
 time docker run \
   -v "$(pwd):/src" \
   -w "/src/gdal" \
+  -e DEBEMAIL \
+  -e DEBFULLNAME \
   "${ECR}/ci-tools:latest" \
     dch --distribution trusty --newversion "${DEB_VERSION}" "Koordinates CI build of ${BUILDKITE_COMMIT}: branch=${BUILDKITE_BRANCH} tag=${BUILDKITE_TAG-}"
 
