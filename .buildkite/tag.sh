@@ -22,3 +22,6 @@ hub release create \
     -t "${BUILDKITE_COMMIT}" \
     -m "CI: ${BUILDKITE_BRANCH}.${BUILDKITE_BUILD_NUMBER}" \
     "${TAG}"
+
+echo -e ":git: Git Tag: \`${TAG}\`" \
+    | buildkite-agent annotate --style info --context git-tag
