@@ -801,6 +801,30 @@ def vsifile_20():
 
     return 'fail'
 
+
+def vsifile_22():
+    # VSIOpenL doesn't set errorno
+    fp = gdal.VSIFOpenL('./tmp/not-existing', 'r')
+    if fp is not None:
+        return 'fail'
+    if gdal.VSIGetLastErrorNo() != 0:
+        return 'fail'
+
+    # VSIOpenExL does
+    fp = gdal.VSIFOpenExL('./tmp/not-existing', 'r', 1)
+    if fp is not None:
+        return 'fail'
+    if gdal.VSIGetLastErrorNo() != 1:
+        return 'fail'
+    if gdal.VSIGetLastErrorMsg() != './tmp/not-existing: No such file or directory':
+        return 'fail'
+    gdal.VSIErrorReset()
+    if gdal.VSIGetLastErrorNo() != 0:
+        return 'fail'
+
+    return 'success'
+
+
 ###############################################################################
 # Test bugfix for https://github.com/OSGeo/gdal/issues/675
 
@@ -833,6 +857,7 @@ gdaltest_list = [vsifile_1,
                  vsifile_18,
                  vsifile_19,
                  vsifile_20,
+                 vsifile_22,
                  vsitar_bug_675]
 
 if __name__ == '__main__':
