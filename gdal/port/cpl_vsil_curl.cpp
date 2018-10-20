@@ -125,6 +125,7 @@ struct curl_slist* VSICurlMergeHeaders( struct curl_slist* poDest,
 #include <map>
 
 #define ENABLE_DEBUG 1
+#define ENABLE_DEBUG_VERBOSE 0
 
 static int N_MAX_REGIONS = 1000;
 static int DOWNLOAD_CHUNK_SIZE = 16384;
@@ -1168,6 +1169,14 @@ retry:
         long response_code = 0;
         curl_easy_getinfo(hCurlHandle, CURLINFO_HTTP_CODE, &response_code);
 
+        if( ENABLE_DEBUG && szCurlErrBuf[0] != '\0' )
+        {
+            CPLDebug("VSICURL", "GetFileSize(%s): response_code=%d, msg=%s",
+                     osURL.c_str(),
+                     static_cast<int>(response_code),
+                     szCurlErrBuf);
+        }
+
         CPLString osEffectiveURL;
         {
             char *pszEffectiveURL = nullptr;
@@ -1388,11 +1397,13 @@ retry:
             bIsDirectory = true;
         }
 
-        if( ENABLE_DEBUG )
+        if( ENABLE_DEBUG && szCurlErrBuf[0] == '\0' )
+        {
             CPLDebug("VSICURL", "GetFileSize(%s)=" CPL_FRMT_GUIB
                      "  response_code=%d",
                      osURL.c_str(), fileSize,
                      static_cast<int>(response_code));
+        }
     }
 
     CPLFree(sWriteFuncData.pBuffer);
@@ -1572,6 +1583,14 @@ retry:
 
     long response_code = 0;
     curl_easy_getinfo(hCurlHandle, CURLINFO_HTTP_CODE, &response_code);
+
+    if( ENABLE_DEBUG && szCurlErrBuf[0] != '\0' )
+    {
+        CPLDebug("VSICURL", "DownloadRegion(%s): response_code=%d, msg=%s",
+                 osURL.c_str(),
+                 static_cast<int>(response_code),
+                 szCurlErrBuf);
+    }
 
     char *content_type = nullptr;
     curl_easy_getinfo(hCurlHandle, CURLINFO_CONTENT_TYPE, &content_type);
@@ -1984,8 +2003,15 @@ int VSICurlHandle::ReadMultiRange( int const nRanges, void ** const ppData,
     std::vector<char*> apszRanges;
     std::vector<struct curl_slist*> aHeaders;
 
+    struct CurlErrBuffer
+    {
+        char szCurlErrBuf[CURL_ERROR_SIZE+1];
+    };
+    std::vector<CurlErrBuffer> asCurlErrors;
+
     asWriteFuncData.resize(nRanges);
     asWriteFuncHeaderData.resize(nRanges);
+    asCurlErrors.resize(nRanges);
 
     const bool bMergeConsecutiveRanges = CPLTestBool(CPLGetConfigOption(
         "GDAL_HTTP_MERGE_CONSECUTIVE_RANGES", "TRUE"));
@@ -2060,6 +2086,10 @@ int VSICurlHandle::ReadMultiRange( int const nRanges, void ** const ppData,
             curl_easy_setopt(hCurlHandle, CURLOPT_RANGE, rangeStr);
         }
 
+        asCurlErrors[iRequest].szCurlErrBuf[0] = '\0';
+        curl_easy_setopt(hCurlHandle, CURLOPT_ERRORBUFFER,
+                         asCurlErrors[iRequest].szCurlErrBuf );
+
         headers = VSICurlMergeHeaders(headers, GetCurlHeaders("GET", headers));
         curl_easy_setopt(hCurlHandle, CURLOPT_HTTPHEADER, headers);
         aHeaders.push_back(headers);
@@ -2088,6 +2118,22 @@ int VSICurlHandle::ReadMultiRange( int const nRanges, void ** const ppData,
 
         long response_code = 0;
         curl_easy_getinfo(aHandles[iReq], CURLINFO_HTTP_CODE, &response_code);
+
+        if( ENABLE_DEBUG && asCurlErrors[iRange].szCurlErrBuf[0] != '\0' )
+        {
+            char rangeStr[512] = {};
+            snprintf(rangeStr, sizeof(rangeStr),
+                    CPL_FRMT_GUIB "-" CPL_FRMT_GUIB,
+                    asWriteFuncHeaderData[iReq].nStartOffset,
+                    asWriteFuncHeaderData[iReq].nEndOffset);
+
+            CPLDebug("VSICURL", "ReadMultiRange(%s), %s: response_code=%d, msg=%s",
+                     osURL.c_str(),
+                     rangeStr,
+                     static_cast<int>(response_code),
+                     asCurlErrors[iRange].szCurlErrBuf);
+        }
+
         if( (response_code != 206 && response_code != 225) ||
             asWriteFuncHeaderData[iReq].nEndOffset+1 !=
                 asWriteFuncHeaderData[iReq].nStartOffset +
@@ -3536,7 +3582,8 @@ char** VSICurlFilesystemHandler::ParseHTMLFileList( const char* pszFilename,
                     cachedFileProp->fileSize = nFileSize;
 
                     oFileList.AddString( beginFilename );
-                    if( ENABLE_DEBUG )
+                    if( ENABLE_DEBUG_VERBOSE )
+                    {
                         CPLDebug("VSICURL",
                                  "File[%d] = %s, is_dir = %d, size = "
                                  CPL_FRMT_GUIB
@@ -3548,6 +3595,7 @@ char** VSICurlFilesystemHandler::ParseHTMLFileList( const char* pszFilename,
                                  brokendowntime.tm_mday,
                                  brokendowntime.tm_hour, brokendowntime.tm_min,
                                  brokendowntime.tm_sec);
+                    }
                     nCount++;
 
                     if( nMaxFiles > 0 && oFileList.Count() > nMaxFiles )
@@ -4379,7 +4427,7 @@ char** VSICurlFilesystemHandler::GetFileList(const char *pszDirname,
                         cachedFileProp->mTime = static_cast<time_t>(mUnixTime);
 
                         oFileList.AddString(pszFilename);
-                        if( ENABLE_DEBUG )
+                        if( ENABLE_DEBUG_VERBOSE )
                         {
                             struct tm brokendowntime;
                             CPLUnixTimeToYMDHMS(mUnixTime, &brokendowntime);
@@ -4427,9 +4475,11 @@ char** VSICurlFilesystemHandler::GetFileList(const char *pszDirname,
                         strcmp(pszLine, "..") != 0 )
                     {
                         oFileList.AddString(pszLine);
-                        if( ENABLE_DEBUG )
+                        if( ENABLE_DEBUG_VERBOSE )
+                        {
                             CPLDebug("VSICURL",
                                      "File[%d] = %s", nCount, pszLine);
+                        }
                         nCount++;
                     }
 
