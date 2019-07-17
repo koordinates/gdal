@@ -52,22 +52,25 @@ time docker run \
     sign-debs "/src/build-trusty/*.deb"
 
 echo "--- Running tests ..."
-TEST_CONTAINER="test-${BUILDKITE_JOB_ID}"
-docker commit "${BUILD_CONTAINER}" "${TEST_CONTAINER}"
+TEST_IMAGE="test-${BUILDKITE_JOB_ID}"
+docker commit "${BUILD_CONTAINER}" "${TEST_IMAGE}"
 R=0
 time docker run --rm -i \
   -v "$(pwd):/src" \
   -w "/src/autotest" \
-  "${TEST_CONTAINER}" \
+  "${TEST_IMAGE}" \
   /bin/bash -exs << EOF || R=$?
+DEBIAN_FRONTEND=noninteractive apt-get update -q
+DEBIAN_FRONTEND=noninteractive apt-get install -y curl
+curl --silent https://bootstrap.pypa.io/get-pip.py 'pip<19' | python -
+pip install 'pytest<5'
+
 DEBIAN_FRONTEND=noninteractive dpkg -i ../build-trusty/{gdal-bin,gdal-data,libgdal20,python-gdal,python3-gdal}*.deb
+
 # skip known failures
-sed -i -r 's/^\s+ogr_fgdb_(19|19bis|20|21),/#\0/' ogr/ogr_fgdb.py
-sed -i -r 's/^\s+basic_test_8,/#\0/' gcore/basic_test.py
-sed -i -r 's/^\s+rfc30_1,/#\0/' gcore/rfc30.py
-sed -i -r 's/^gdaltest_list = \[rfc30_1,$/gdaltest_list = [ #rfc30_1/' gcore/rfc30.py
-sed -i -r 's/^gdaltest_list = \[rfc30_1, rfc30_2\]/gdaltest_list = [rfc30_2] #rfc30_1/' gcore/rfc30.py
-TRAVIS=YES TRAVIS_BRANCH=trusty python run_all.py
+rm gcore/rfc30.py
+
+TRAVIS=YES TRAVIS_BRANCH=trusty pytest -v
 EOF
 
 if [ $R -ne 0 ]; then
@@ -78,5 +81,3 @@ else
 fi
 
 docker rm "${BUILD_CONTAINER}"
-
-exit 0
