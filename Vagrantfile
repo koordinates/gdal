@@ -64,7 +64,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   ppaRepos = [
     "ppa:openjdk-r/ppa",
-    "ppa:ubuntugis/ubuntugis-unstable",
+    "ppa:ubuntugis/ppa",
+    "ppa:ubuntugis/ubuntugis-testing",
     "ppa:miurahr/gdal-depends"
   ]
 
