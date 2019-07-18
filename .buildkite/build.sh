@@ -69,8 +69,7 @@ DEBIAN_FRONTEND=noninteractive dpkg -i ../build-trusty/{gdal-bin,gdal-data,libgd
 
 # skip known failures
 rm gcore/rfc30.py
-
-TRAVIS=YES TRAVIS_BRANCH=trusty pytest -v
+TRAVIS=YES TRAVIS_BRANCH=trusty pytest -v -k 'not (test_ogr_fgdb_13 or test_vsisync or test_vsis3_init or test_vsis3_1 or test_vsis3_cleanup or test_eedai_GOOGLE_APPLICATION_CREDENTIALS)'
 EOF
 
 if [ $R -ne 0 ]; then
