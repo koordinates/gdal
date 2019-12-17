@@ -16,11 +16,13 @@ DEB_BASE_VERSION=$(cat gdal/VERSION)
 DEB_VERSION="${DEB_BASE_VERSION}+ci${BUILDKITE_BUILD_NUMBER}-$(git show -s --date=format:%Y%m%d --format=git%cd.%h)"
 echo "Debian Package Version: ${DEB_VERSION}"
 
-buildkite-agent meta-data set deb-base-version "$DEB_BASE_VERSION"
-buildkite-agent meta-data set deb-version "$DEB_VERSION"
+if [ -n "${BUILDKITE_AGENT_ACCESS_TOKEN-}" ] ; then 
+  buildkite-agent meta-data set deb-base-version "$DEB_BASE_VERSION"
+  buildkite-agent meta-data set deb-version "$DEB_VERSION"
 
-echo -e ":debian: Package Version: \`${DEB_VERSION}\`" \
-    | buildkite-agent annotate --style info --context deb-version
+  echo -e ":debian: Package Version: \`${DEB_VERSION}\`" \
+      | buildkite-agent annotate --style info --context deb-version
+fi
 
 time docker run \
   -v "$(pwd):/src" \
