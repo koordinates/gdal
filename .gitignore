@@ -22,3 +22,4 @@ __pycache__/
 
 # koordinates
 /build-trusty/
+/build-bionic/

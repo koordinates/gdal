@@ -1,3 +1,16 @@
+gdal (2.4.3+ci123-git20191217.69f4100494) bionic; urgency=medium
+
+  * Koordinates CI build of 69f410049404760846c560cb901eb6ae1d555a4b:
+    branch=kx-2.4-bionic tag=
+
+ -- Koordinates CI Builder <support@koordinates.com>  Tue, 07 Jan 2020 03:21:10 +0000
+
+gdal (2.4.2-bionic) bionic; urgency=medium
+
+  * Base Koordinates build for bionic
+
+ -- Craig de Stigter <craig.destigter@koordinates.com>  Tue, 07 Jan 2020 03:19:02 +0000
+
 gdal (2.4.2-trusty) trusty; urgency=medium
 
   * Base Koordinates build
