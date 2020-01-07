@@ -3,7 +3,7 @@ steps:
   - label: ':debian: Build & Package & Test'
     command: ".buildkite/build.sh"
     artifact_paths:
-      - "build-trusty/*"
+      - "build-bionic/*"
 
   - block: "Release?"
     prompt: "Tag & Release to archive? Check the test results first!"
@@ -27,14 +27,14 @@ steps:
         aptly-upload
         --aptly-url https://apt-repo.kx.gd
         --retries 3
-        --repo kx-builds
-        --series trusty
-        build-trusty/*.deb
+        --repo kx-builds-bionic
+        --series bionic
+        build-bionic/*.deb
     retry:
       automatic: true
     plugins:
       artifacts#v1.2.0:
-        download: "build-trusty/*.deb"
+        download: "build-bionic/*.deb"
       docker#v1.4.0:
         image: "${ECR}/ci-tools"
         always-pull: true

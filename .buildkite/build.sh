@@ -30,7 +30,7 @@ time docker run \
   -e DEBEMAIL \
   -e DEBFULLNAME \
   "${ECR}/ci-tools:latest" \
-    dch --distribution trusty --newversion "${DEB_VERSION}" "Koordinates CI build of ${BUILDKITE_COMMIT}: branch=${BUILDKITE_BRANCH} tag=${BUILDKITE_TAG-}"
+    dch --distribution bionic --newversion "${DEB_VERSION}" "Koordinates CI build of ${BUILDKITE_COMMIT}: branch=${BUILDKITE_BRANCH} tag=${BUILDKITE_TAG-}"
 
 BUILD_CONTAINER="build-${BUILDKITE_JOB_ID}"
 
@@ -42,7 +42,7 @@ time docker run \
   -v "ccache:/ccache" \
   -e CCACHE_DIR=/ccache \
   -w "/kx/source/gdal" \
-  "${ECR}/trustybuild:latest" \
+  "${ECR}/bionicbuild:latest" \
     /kx/buildscripts/build_binary_package.sh -uc -us
 
 echo "--- Signing debian archives ..."
@@ -51,7 +51,7 @@ time docker run \
   -e "GPG_KEY=${APT_GPG_KEY}" \
   -w "/src" \
   "${ECR}/ci-tools:latest" \
-    sign-debs "/src/build-trusty/*.deb"
+    sign-debs "/src/build-bionic/*.deb"
 
 echo "--- Running tests ..."
 TEST_IMAGE="test-${BUILDKITE_JOB_ID}"
@@ -67,11 +67,11 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y curl
 curl --silent https://bootstrap.pypa.io/get-pip.py 'pip<19' | python -
 pip install 'pytest<5'
 
-DEBIAN_FRONTEND=noninteractive dpkg -i ../build-trusty/{gdal-bin,gdal-data,libgdal20,python-gdal,python3-gdal}*.deb
+DEBIAN_FRONTEND=noninteractive dpkg -i ../build-bionic/{gdal-bin,gdal-data,libgdal20,python-gdal,python3-gdal}*.deb
 
 # skip known failures
 rm gcore/rfc30.py
-TRAVIS=YES TRAVIS_BRANCH=trusty pytest -v -k 'not (test_ogr_fgdb_13 or test_vsisync or test_vsis3_init or test_vsis3_1 or test_vsis3_cleanup or test_eedai_GOOGLE_APPLICATION_CREDENTIALS)'
+TRAVIS=YES TRAVIS_BRANCH=ubuntu_1804 pytest -v -k 'not (test_ogr_fgdb_13 or test_vsisync or test_vsis3_init or test_vsis3_1 or test_vsis3_cleanup or test_eedai_GOOGLE_APPLICATION_CREDENTIALS)'
 EOF
 
 if [ $R -ne 0 ]; then
