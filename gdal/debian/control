@@ -60,7 +60,7 @@ Build-Depends: debhelper (>= 9.20160114),
                unixodbc-dev (>= 2.2.11),
                zlib1g-dev,
                libesri-filegdb-1.5.1,
-               libkakadu-7.10.2,
+               libkakadu-7.10.6,
                libkea (>= 1.4.4)
 Build-Conflicts: automake1.11,
                  python-setuptools
@@ -75,7 +75,7 @@ Architecture: any
 Section: libs
 Depends: gdal-data (>= ${source:Version}),
          libesri-filegdb-1.5.1,
-         libkakadu-7.10.2,
+         libkakadu-7.10.6,
          ${shlibs:Depends},
          ${misc:Depends}
 Recommends: proj-bin
@@ -138,7 +138,7 @@ Depends: libgdal20 (= ${binary:Version}),
          libxml2-dev,
          unixodbc-dev,
          libesri-filegdb-1.5.1,
-         libkakadu-7.10.2,
+         libkakadu-7.10.6,
          ${misc:Depends}
 Suggests: libgdal-doc
 Description: Geospatial Data Abstraction Library - Development files
