@@ -60,8 +60,8 @@ Build-Depends: debhelper (>= 9.20160114),
                unixodbc-dev (>= 2.2.11),
                zlib1g-dev,
                libesri-filegdb-1.5.1,
-               libkakadu-7.10.6,
-               libkea (>= 1.4.4)
+               libkakadu-7.10.6
+#               libkea (>= 1.4.4)
 Build-Conflicts: automake1.11,
                  python-setuptools
 Standards-Version: 4.1.3

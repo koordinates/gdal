@@ -156,7 +156,6 @@ override_dh_auto_configure:
 			--with-java=/usr/lib/jvm/default-java \
 			--with-perl \
 			--with-python \
-			--with-kea=/usr/bin/kea-config \
 			--with-jpeg12 \
 			--with-fgdb=/usr/local/libesri-filegdb-$(FILEGDB_VERSION) \
 			--with-kakadu=/usr/local/libkakadu-$(KAKADU_VERSION) ; \
