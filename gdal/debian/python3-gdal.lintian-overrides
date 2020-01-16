@@ -1,3 +1,6 @@
+# False positive on: "(319) 369-3131"
+copyright-year-in-future 3131 *
+
 # Kx: Dumb binary dependencies that don't have sonames
-python3-gdal: binary-or-shlib-defines-rpath * /usr/local/libesri-filegdb-*
-python3-gdal: binary-or-shlib-defines-rpath * /usr/local/libkakadu-*
+binary-or-shlib-defines-rpath * /usr/local/libesri-filegdb-*
+binary-or-shlib-defines-rpath * /usr/local/libkakadu-*

@@ -4,7 +4,7 @@ Forwarded: not-needed
 
 --- a/frmts/wms/frmt_wms.html
 +++ b/frmts/wms/frmt_wms.html
-@@ -448,19 +448,19 @@ dimension and the number of resolutions.
+@@ -454,19 +454,19 @@ dimension and the number of resolutions.
  	tile size of the cache. The following example is a sample set up for
  	a 19-level "Global Profile" WMS-C cache.
  	<pre>gdal_translate -of PNG -outsize 500 250 metacarta_wmsc.xml metacarta_wmsc.png</pre>
