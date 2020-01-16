@@ -1,3 +1,9 @@
 # Man pages are automatically generated with sphinx.
-libgdal-dev: hyphen-used-as-minus-sign
+hyphen-used-as-minus-sign
+
+# False positive on: "(319) 369-3131"
+copyright-year-in-future 3131 *
+
+# GDAL doesn't use Multi-Arch, it breaks too many rdeps
+pkg-config-unavailable-for-cross-compilation usr/lib/pkgconfig/gdal.pc
 

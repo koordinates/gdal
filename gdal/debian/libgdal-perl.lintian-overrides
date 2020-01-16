@@ -1,3 +1,9 @@
+# False positive on: "(319) 369-3131"
+copyright-year-in-future 3131 *
+
+# Cannot easily be fixed
+file-references-package-build-path *
+
 # Kx: Dumb binary dependencies that don't have sonames
-libgdal-perl: binary-or-shlib-defines-rpath * /usr/local/libesri-filegdb-*
-libgdal-perl: binary-or-shlib-defines-rpath * /usr/local/libkakadu-*
+binary-or-shlib-defines-rpath * /usr/local/libesri-filegdb-*
+binary-or-shlib-defines-rpath * /usr/local/libkakadu-*
