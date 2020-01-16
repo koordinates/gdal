@@ -1,10 +1,12 @@
 # False positive on: {136, "Socialist Republic of Viet Nam"},
-libgdal20: spelling-error-in-binary * Nam Name
+spelling-error-in-binary * Nam Name
 
-# Kx: Using internal versions of stuff
-libgdal20: embedded-library * libjpeg
-libgdal20: embedded-library * tiff
+# False positive on: "(319) 369-3131"
+copyright-year-in-future 3131 *
+
+# Cannot easily be fixed
+file-references-package-build-path *
 
 # Kx: Dumb binary dependencies that don't have sonames
-libgdal20: binary-or-shlib-defines-rpath * /usr/local/libesri-filegdb-*
-libgdal20: binary-or-shlib-defines-rpath * /usr/local/libkakadu-*
+binary-or-shlib-defines-rpath * /usr/local/libesri-filegdb-*
+binary-or-shlib-defines-rpath * /usr/local/libkakadu-*
