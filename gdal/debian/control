@@ -58,6 +58,7 @@ Build-Depends: debhelper (>= 9.20160114),
                swig,
                unixodbc-dev (>= 2.2.11),
                zlib1g-dev,
+               libssl-dev,
                libesri-filegdb-1.5.1,
                libkakadu-7.10.6
 #               libkea (>= 1.4.4)
