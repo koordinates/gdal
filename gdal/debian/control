@@ -59,7 +59,7 @@ Build-Depends: debhelper (>= 9.20160114),
                unixodbc-dev (>= 2.2.11),
                zlib1g-dev,
                libssl-dev,
-               libesri-filegdb-1.5.1,
+               libesri-filegdb-1.5.1 (>=1.5.1-5),
                libkakadu-7.10.6
 #               libkea (>= 1.4.4)
 Build-Conflicts: automake1.11,
@@ -73,7 +73,7 @@ Package: libgdal20
 Architecture: any
 Section: libs
 Depends: gdal-data (>= ${source:Version}),
-         libesri-filegdb-1.5.1,
+         libesri-filegdb-1.5.1 (>=1.5.1-5),
          libkakadu-7.10.6,
          ${shlibs:Depends},
          ${misc:Depends}
@@ -138,7 +138,7 @@ Depends: libgdal20 (= ${binary:Version}),
          libxml2-dev,
          libzstd-dev,
          unixodbc-dev,
-         libesri-filegdb-1.5.1,
+         libesri-filegdb-1.5.1 (>=1.5.1-5),
          libkakadu-7.10.6,
          ${misc:Depends}
 Suggests: libgdal-doc
