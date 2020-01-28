@@ -219,9 +219,10 @@ override_dh_auto_install:
 	rm -f $(CURDIR)/debian/tmp/usr/lib/libgdal.la
 
 	# removing embedded rpath in main lib
-	# KX: because of kakadu/esri we don't want this
-	#-find $(CURDIR)/debian/tmp/usr/lib -type f -name "*.so*" -exec chrpath --delete {} \;
-	find $(CURDIR)/debian/tmp/usr/lib -type f -name "*.so*" -exec chrpath --replace $(RPATH_SET) {} \;
+	find $(CURDIR)/debian/tmp/usr/lib -type f -name "*.so*" -exec chrpath --delete {} \;
+	# KX: because of kakadu/esri we *do* want rpath, but note above it's actually 'runpath' and we need 'rpath'.
+	# So we set it again here and force it to set rpath.
+	find $(CURDIR)/debian/tmp/usr/lib -type f -name "*.so*" -exec patchelf --force-rpath --set-rpath $(RPATH_SET) {} \;
 
 	# copy sample programs for python-gdal
 	install -o root -g root -d $(CURDIR)/debian/tmp/usr/share/doc/python-gdal/examples
