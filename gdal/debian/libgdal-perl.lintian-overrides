@@ -3,7 +3,3 @@ copyright-year-in-future 3131 *
 
 # Cannot easily be fixed
 file-references-package-build-path *
-
-# Kx: Dumb binary dependencies that don't have sonames
-binary-or-shlib-defines-rpath * /usr/local/libesri-filegdb-*
-binary-or-shlib-defines-rpath * /usr/local/libkakadu-*

@@ -29,16 +29,8 @@ endif
 
 include /usr/share/dpkg/pkg-info.mk
 
-# KX: Kakadu & FileGDB don't include sonames so we can't install multiple versions.
-# Use rpath to workaround
 DPKG_EXPORT_BUILDFLAGS = 1
 include /usr/share/dpkg/buildflags.mk
-# versions. Remember to change control file too
-KAKADU_VERSION=7.10.6
-FILEGDB_VERSION=1.5.1
-RPATH_SET=/usr/local/libesri-filegdb-$(FILEGDB_VERSION)/lib:/usr/local/libkakadu-$(KAKADU_VERSION)/lib
-LDFLAGS += -Wl,-rpath,$(RPATH_SET)
-
 
 UPSTREAM_VERSION = $(shell echo $(DEB_VERSION_UPSTREAM) | sed -e 's/\+.*//')
 
@@ -163,8 +155,8 @@ override_dh_auto_configure:
 			--with-java=/usr/lib/jvm/default-java \
 			--with-perl \
 			--with-python \
-			--with-fgdb=/usr/local/libesri-filegdb-$(FILEGDB_VERSION) \
-			--with-kakadu=/usr/local/libkakadu-$(KAKADU_VERSION) ; \
+			--with-fgdb=/usr/local \
+			--with-kakadu=/usr/local ; \
 		mv GDALmake.opt GDALmake.opt-$$V; \
 	done
 
@@ -219,10 +211,7 @@ override_dh_auto_install:
 	rm -f $(CURDIR)/debian/tmp/usr/lib/libgdal.la
 
 	# removing embedded rpath in main lib
-	find $(CURDIR)/debian/tmp/usr/lib -type f -name "*.so*" -exec chrpath --delete {} \;
-	# KX: because of kakadu/esri we *do* want rpath, but note above it's actually 'runpath' and we need 'rpath'.
-	# So we set it again here and force it to set rpath.
-	find $(CURDIR)/debian/tmp/usr/lib -type f -name "*.so*" -exec patchelf --force-rpath --set-rpath $(RPATH_SET) {} \;
+	-find $(CURDIR)/debian/tmp/usr/lib -type f -name "*.so*" -exec chrpath --delete {} \;
 
 	# copy sample programs for python-gdal
 	install -o root -g root -d $(CURDIR)/debian/tmp/usr/share/doc/python-gdal/examples
