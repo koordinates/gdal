@@ -60,8 +60,8 @@ Build-Depends: debhelper (>= 9.20160114),
                zlib1g-dev,
                libssl-dev,
                libesri-filegdb,
-               libkakadu
-#               libkea (>= 1.4.4)
+               libkakadu,
+               libkea1.4
 Build-Conflicts: automake1.11,
                  python-setuptools
 Standards-Version: 4.3.0
