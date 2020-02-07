@@ -155,6 +155,7 @@ override_dh_auto_configure:
 			--with-java=/usr/lib/jvm/default-java \
 			--with-perl \
 			--with-python \
+            --with-kea=/usr/bin/kea-config \
 			--with-fgdb=/usr/local \
 			--with-kakadu=/usr/local ; \
 		mv GDALmake.opt GDALmake.opt-$$V; \
