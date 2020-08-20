@@ -4,23 +4,24 @@ Uploaders: Francesco Paolo Lovergine <frankie@debian.org>,
            Bas Couwenberg <sebastic@debian.org>
 Section: science
 Priority: optional
-Build-Depends: debhelper (>= 9),
+Build-Depends: debhelper (>= 9.20160114),
                dh-autoreconf,
                dh-python,
                d-shlibs,
-               default-jdk,
+               default-jdk-headless,
                doxygen,
-               doxygen-latex,
                graphviz,
                ant,
-               autotools-dev,
                chrpath,
                libarmadillo-dev,
-               libcurl4-openssl-dev,
+               libcharls-dev,
+               libcurl4-gnutls-dev | libcurl-ssl-dev,
                libdap-dev,
+               libdoxygen-filter-perl,
                libepsilon-dev (>= 0.9.1-1~),
                libexpat1-dev,
                libfreexl-dev (>= 1.0.0),
+               libfyba-dev,
                libgeos-dev,
                libgif-dev,
                libhdf4-alt-dev,
@@ -29,7 +30,8 @@ Build-Depends: debhelper (>= 9),
                libjson-c-dev,
                libkml-dev,
                liblzma-dev,
-               libmysqlclient-dev,
+               libmodern-perl-perl,
+       default-libmysqlclient-dev,
                libnetcdf-dev (>= 1:4.0.0),
                libogdi3.2-dev,
                libpcre3-dev,
@@ -37,6 +39,7 @@ Build-Depends: debhelper (>= 9),
                libpoppler-private-dev,
                libpq-dev,
                libproj-dev,
+               libqhull-dev,
                libspatialite-dev,
                libsqlite3-dev,
                liburiparser-dev,
@@ -44,37 +47,39 @@ Build-Depends: debhelper (>= 9),
                libxerces-c-dev,
                libxml2-dev,
                libzstd-dev,
+               lsb-release,
                netcdf-bin,
                patch,
                python-all-dev (>= 2.6.6-3~),
                python-numpy,
                python3-all-dev,
                python3-numpy,
+               python3-distutils,
                swig,
                unixodbc-dev (>= 2.2.11),
                zlib1g-dev,
-               libesri-filegdb-1.5.1,
-               libkakadu-7.10.2,
-               libkea (>= 1.4.4)               
+               libssl-dev,
+               libesri-filegdb,
+               libkakadu,
+               libkea1.4
 Build-Conflicts: automake1.11,
                  python-setuptools
-Standards-Version: 4.0.0
-Vcs-Browser: https://anonscm.debian.org/cgit/pkg-grass/gdal.git
-Vcs-Git: https://anonscm.debian.org/git/pkg-grass/gdal.git
+Standards-Version: 4.3.0
+Vcs-Browser: https://salsa.debian.org/debian-gis-team/gdal
+Vcs-Git: https://salsa.debian.org/debian-gis-team/gdal.git
 Homepage: http://www.gdal.org/
-X-Python3-Version: >= 3.2
 
 Package: libgdal20
 Architecture: any
 Section: libs
 Depends: gdal-data (>= ${source:Version}),
-         libesri-filegdb-1.5.1,
-         libkakadu-7.10.2,
+         libesri-filegdb,
+         libkakadu,
          ${shlibs:Depends},
          ${misc:Depends}
 Recommends: proj-bin
 Breaks: libgdal1h (<< 2.0)
-Provides: gdal-abi-2-3-0
+Provides: gdal-abi-2-4-0
 Description: Geospatial Data Abstraction Library
  GDAL is a translator library for raster geospatial data formats.
  As a library, it presents a single abstract data model to the
@@ -100,11 +105,13 @@ Section: libdevel
 Depends: libgdal20 (= ${binary:Version}),
          libc6-dev,
          libarmadillo-dev,
+         libcharls-dev,
          libcurl4-gnutls-dev | libcurl-ssl-dev,
          libdap-dev,
          libepsilon-dev,
          libexpat1-dev,
          libfreexl-dev,
+         libfyba-dev,
          libgeos-dev,
          libgif-dev,
          libhdf4-alt-dev,
@@ -114,7 +121,7 @@ Depends: libgdal20 (= ${binary:Version}),
          libkml-dev,
          libltdl-dev,
          liblzma-dev,
-         libmysqlclient-dev,
+ default-libmysqlclient-dev,
          libnetcdf-dev,
          libogdi3.2-dev,
          libpcre3-dev,
@@ -122,6 +129,7 @@ Depends: libgdal20 (= ${binary:Version}),
          libpoppler-private-dev,
          libpq-dev,
          libproj-dev,
+         libqhull-dev,
          libspatialite-dev,
          libsqlite3-dev,
          liburiparser-dev,
@@ -130,8 +138,8 @@ Depends: libgdal20 (= ${binary:Version}),
          libxml2-dev,
          libzstd-dev,
          unixodbc-dev,
-         libesri-filegdb-1.5.1,
-         libkakadu-7.10.2,
+         libesri-filegdb,
+         libkakadu,
          ${misc:Depends}
 Suggests: libgdal-doc
 Description: Geospatial Data Abstraction Library - Development files
@@ -152,13 +160,13 @@ Description: Geospatial Data Abstraction Library - Development files
  TIGER data, S57, MapInfo File, DGN, GML and more.
  .
  This package contains the files needed to develop a software that
- will use the GDAL/OGR (headers, static objects, configuration script). 
+ will use the GDAL/OGR (headers, static objects, configuration script).
 
 Package: libgdal-doc
 Architecture: all
+Multi-Arch: foreign
 Section: doc
-Depends: libjs-jquery,
-         ${misc:Depends}
+Depends: ${misc:Depends}
 Suggests: libgdal20
 Description: Documentation for the Geospatial Data Abstraction Library
  GDAL is a translator library for raster geospatial data formats.
@@ -182,8 +190,7 @@ Description: Documentation for the Geospatial Data Abstraction Library
 Package: gdal-bin
 Architecture: any
 Depends: ${shlibs:Depends},
-         ${misc:Depends},
-         libgdal20 (= ${source:Version})
+         ${misc:Depends}
 Suggests: libgdal-grass,
           python-gdal
 Breaks: gdal-bin (<< 1.10.0-0~)
@@ -210,6 +217,7 @@ Description: Geospatial Data Abstraction Library - Utility programs
 
 Package: gdal-data
 Architecture: all
+Multi-Arch: foreign
 Depends: ${misc:Depends}
 Description: Geospatial Data Abstraction Library - Data files
  GDAL is a translator library for raster geospatial data formats.
@@ -235,8 +243,7 @@ Architecture: any
 Section: python
 Depends: ${python:Depends},
          ${shlibs:Depends},
-         ${misc:Depends},
-         libgdal20 (= ${source:Version})
+         ${misc:Depends}
 Suggests: gdal-bin
 Provides: ${python:Provides}
 Description: Python bindings to the Geospatial Data Abstraction Library
@@ -264,8 +271,7 @@ Architecture: any
 Section: python
 Depends: ${python3:Depends},
          ${shlibs:Depends},
-         ${misc:Depends},
-         libgdal20 (= ${source:Version})
+         ${misc:Depends}
 Suggests: gdal-bin
 Provides: ${python3:Provides}
 Description: Python 3 bindings to the Geospatial Data Abstraction Library
@@ -290,10 +296,10 @@ Description: Python 3 bindings to the Geospatial Data Abstraction Library
 Package: libgdal-perl
 Architecture: any
 Section: perl
-Depends: libjs-jquery,
-         ${perl:Depends},
+Depends: ${perl:Depends},
          ${shlibs:Depends},
          ${misc:Depends}
+Suggests: libgdal-perl-doc
 Description: Perl bindings to the Geospatial Data Abstraction Library
  GDAL is a translator library for raster geospatial data formats.
  As a library, it presents a single abstract data model to the
@@ -312,6 +318,31 @@ Description: Perl bindings to the Geospatial Data Abstraction Library
  TIGER data, S57, MapInfo File, DGN, GML and more.
  .
  This package contains Perl bindings for GDAL/OGR library.
+
+Package: libgdal-perl-doc
+Architecture: all
+Depends: ${misc:Depends}
+Breaks: libgdal-perl (<< 2.2.3+dfsg-2~exp1)
+Replaces: libgdal-perl (<< 2.2.3+dfsg-2~exp1)
+Section: doc
+Description: Documentation for GDAL Perl bindings
+ As a library, it presents a single abstract data model to the
+ calling application for all supported formats. The related OGR
+ library (which lives within the GDAL source tree) provides
+ a similar capability for simple features vector data.
+ .
+ GDAL supports 40+ popular data formats, including commonly used
+ ones (GeoTIFF, JPEG, PNG and more) as well as the ones used in
+ GIS and remote sensing software packages (ERDAS Imagine,
+ ESRI Arc/Info, ENVI, PCI Geomatics). Also supported many remote
+ sensing and scientific data distribution formats such as HDF,
+ EOS FAST, NOAA L1B, NetCDF, FITS.
+ .
+ OGR library supports popular vector formats like ESRI Shapefile,
+ TIGER data, S57, MapInfo File, DGN, GML and more.
+ .
+ This package contains the documentation of the Perl bindings for
+ GDAL/OGR library.
 
 Package: libgdal-java
 Architecture: any
@@ -336,4 +367,3 @@ Description: Java bindings to the Geospatial Data Abstraction Library
  TIGER data, S57, MapInfo File, DGN, GML and more.
  .
  This package contains Java bindings for GDAL/OGR library.
-
