@@ -5,3 +5,6 @@
 # https://svn.osgeo.org/metacrs/geotiff/trunk/libgeotiff/csv/gcs.override.csv
 #
 # Do *not* change other copies without upstreaming the results to libgeotiff.
+
+# Koordinates: Panama PA27 (for PROJCS #800200)
+800201,"PA27",800202,PA27,800202,9122,7008,8901,1,0,6422,,0,,,,,,,,
