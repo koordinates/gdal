@@ -34,7 +34,7 @@ include /usr/share/dpkg/buildflags.mk
 
 UPSTREAM_VERSION = $(shell echo $(DEB_VERSION_UPSTREAM) | sed -e 's/\+.*//')
 
-PYVERS=$(shell pyversions -v -r debian/control) $(shell py3versions -v -r)
+PYVERS=2.7 3.7
 PYDEF=$(shell pyversions -dv)
 PERLDEF=$(shell perl -V:version|cut -d\' -f2)
 SWIGVER=$(shell swig -version |grep Version|cut -d' ' -f3|sed -e 's/\.//g')
@@ -236,7 +236,6 @@ override_dh_python2:
 
 override_dh_python3:
 	dh_python3 -X.info -ppython3-gdal
-	dh_numpy3 -ppython3-gdal
 
 override_dh_makeshlibs:
 	# Forces failure ignoring to collect new symbols on all archs
