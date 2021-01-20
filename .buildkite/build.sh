@@ -56,6 +56,7 @@ time docker run \
 echo "--- Running tests ..."
 TEST_IMAGE="test-${BUILDKITE_JOB_ID}"
 docker commit "${BUILD_CONTAINER}" "${TEST_IMAGE}"
+docker rm "${BUILD_CONTAINER}"
 R=0
 time docker run --rm -i \
   -v "$(pwd):/src" \
@@ -81,4 +82,3 @@ else
   echo "--- ✅ GDAL tests passed!"
 fi
 
-docker rm "${BUILD_CONTAINER}"

@@ -4,6 +4,7 @@ Uploaders: Francesco Paolo Lovergine <frankie@debian.org>,
            Bas Couwenberg <sebastic@debian.org>
 Section: science
 Priority: optional
+X-Python3-Version: 3.7
 Build-Depends: debhelper (>= 9.20160114),
                dh-autoreconf,
                dh-python,
@@ -52,9 +53,7 @@ Build-Depends: debhelper (>= 9.20160114),
                patch,
                python-all-dev (>= 2.6.6-3~),
                python-numpy,
-               python3-all-dev,
-               python3-numpy,
-               python3-distutils,
+               python3.7-dev,
                swig,
                unixodbc-dev (>= 2.2.11),
                zlib1g-dev,
