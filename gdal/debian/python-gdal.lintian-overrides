@@ -1,9 +1,0 @@
-# Man pages are automatically generated with sphinx.
-hyphen-used-as-minus-sign
-binary-without-manpage
-
-# QGIS plugins rely on .py extension, see: http://hub.qgis.org/issues/9924
-script-with-language-extension usr/bin/*.py
-
-# False positive on: "(319) 369-3131"
-copyright-year-in-future 3131 *

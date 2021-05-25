@@ -3,7 +3,7 @@ hyphen-used-as-minus-sign
 manpage-has-errors-from-man
 binary-without-manpage
 
-# Breaks for python-gdal vs gdal-bin due to gdal_retile.1 collision
+# Breaks for python3-gdal vs gdal-bin due to gdal_retile.1 collision
 # in pre-1.10 versions distributed in experimental. Just for safety.
 package-relation-with-self breaks: gdal-bin (<< 1.10.0-0~)
 
