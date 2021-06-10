@@ -1,0 +1,12 @@
+ogdi
+hdf4
+gdal-grass
+ecw-plugin
+mrsid-plugin
+spatialite
+java.opt
+perl-vendor
+privacy-breach-logo.patch
+privacy-breach-generic.patch
+perl-doxyfile
+0001-configure-use-pkg-config-for-libxml2-detection-fixes.patch

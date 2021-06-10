@@ -1,0 +1,6 @@
+# Not worth the effort
+testsuite-autopkgtest-missing
+
+# False positive, sequencer is excluded for custom targets
+no-dh-sequencer
+

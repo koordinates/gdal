@@ -1,0 +1,16 @@
+Description: Fix include path of ogdi library.
+Author: Francesco Paolo Lovergine <frankie@debian.org>
+Last-Update: 2010-05-13
+Forwarded: not-needed
+
+--- a/GDALmake.opt.in
++++ b/GDALmake.opt.in
+@@ -424,7 +424,7 @@ PCRASTER_SETTING	=	@PCRASTER_SETTING@
+ #
+ HAVE_LERC =	@HAVE_LERC@
+ 
+-OGDI_INCLUDE	=	@OGDI_INCLUDE@
++OGDI_INCLUDE	=	-I/usr/include/ogdi
+ 
+ PNG_SETTING     =	@PNG_SETTING@
+ JPEG_SETTING	=	@JPEG_SETTING@

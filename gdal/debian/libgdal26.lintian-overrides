@@ -1,0 +1,12 @@
+# False positive on: {136, "Socialist Republic of Viet Nam"},
+spelling-error-in-binary * Nam Name
+
+# Part of GRIB abbreviation
+spelling-error-in-binary * Instnt Instant
+
+# False positive, string not included in source
+spelling-error-in-binary * increaS increase
+
+# False positive on: "(319) 369-3131"
+copyright-year-in-future 3131 *
+
