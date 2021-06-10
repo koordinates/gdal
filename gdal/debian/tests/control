@@ -1,3 +1,0 @@
-# Test installability
-Depends: @
-Test-Command: /bin/true
