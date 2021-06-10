@@ -11,6 +11,9 @@
 # Enable hardening build flags
 export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 
+# KX: don't strip debugging symbols
+export DEB_BUILD_OPTIONS=nostrip
+
 # Disable PIE on Ubuntu where it's still problematic
 VENDOR_DERIVES_FROM_UBUNTU ?= $(shell dpkg-vendor --derives-from Ubuntu && echo yes)
 DISTRIBUTION_RELEASE       := $(shell lsb_release -cs)
@@ -25,8 +28,8 @@ include /usr/share/dpkg/pkg-info.mk
 
 UPSTREAM_VERSION = $(shell echo $(DEB_VERSION_UPSTREAM) | sed -e 's/\+.*//')
 
-PYVERS=$(shell py3versions -v -r)
-PYDEF=$(shell py3versions -dv)
+PYVERS=3.7
+PYDEF=3.7
 PERLDEF=$(shell perl -V:version|cut -d\' -f2)
 SWIGVER=$(shell swig -version |grep Version|cut -d' ' -f3|sed -e 's/\.//g')
 
@@ -100,36 +103,38 @@ override_dh_auto_clean:
 	rm -rf $(CURDIR)/frmts/o/.libs
 	rm -f  $(CURDIR)/islibdappost310.*
 
+#--with-hide-internal-symbols=yes \
+#--with-rename-internal-libtiff-symbols=yes \
+#--with-rename-internal-libgeotiff-symbols=yes \
+
 override_dh_auto_configure:
 	for V in $(PYVERS); do \
 		PYTHON=/usr/bin/python$$V ./configure --prefix=/usr \
 			--mandir=\$$\{prefix\}/share/man \
 			--includedir=\$$\{prefix\}/include/gdal \
-			--with-hide-internal-symbols=yes \
-			--with-rename-internal-libtiff-symbols=yes \
-			--with-rename-internal-libgeotiff-symbols=yes \
+			--with-pic \
 			--with-threads \
 			--with-armadillo=yes \
-			--with-cfitsio=yes \
+			--with-cfitsio=no \
 			--with-charls \
 			--with-curl \
 			--with-ecw=no \
 			--with-epsilon=/usr \
 			--with-freexl=yes \
 			--with-geos \
-			--with-geotiff=yes \
+			--with-geotiff=internal \
 			--with-grass=no \
 			$(WITH_HDF5) \
 			--with-libjson-c=/usr \
 			--with-libkml=yes \
 			--with-liblzma=yes \
-			--with-libtiff=yes \
+			--with-libtiff=internal \
 			--with-mrsid=no \
 			--with-mysql \
 			--with-netcdf \
 			--with-odbc \
 			--with-ogdi \
-			--with-openjpeg=yes \
+			--with-openjpeg=no \
 			--with-pg \
 			--with-poppler=yes \
 			--with-proj=yes \
@@ -143,7 +148,10 @@ override_dh_auto_configure:
 			--with-dods-root=/usr \
 			--with-java=/usr/lib/jvm/default-java \
 			--with-perl \
-			--with-python; \
+			--with-python \
+            --with-kea=/usr/bin/kea-config \
+			--with-fgdb=/usr/local \
+			--with-kakadu=/usr/local ; \
 		mv GDALmake.opt GDALmake.opt-$$V; \
 	done
 
@@ -217,7 +225,7 @@ override_dh_installdocs:
 	rm -f $(CURDIR)/debian/*/usr/share/doc/libgdal-perl-doc/*/*.md5
 
 override_dh_python3:
-	dh_python3 -X.info -pgdal-bin -ppython3-gdal --shebang=/usr/bin/python3
+	dh_python3 -X.info -pgdal-bin -ppython3-gdal --shebang=/usr/bin/python3.7
 	dh_numpy3 -pgdal-bin -ppython3-gdal
 
 override_dh_makeshlibs:
