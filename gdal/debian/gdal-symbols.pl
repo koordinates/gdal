@@ -30,7 +30,7 @@ use Term::Prompt;
 
 $|=1;
 
-my $package = 'libgdal20';
+my $package = 'libgdal28';
 my $pkgdir  = 'binary-'.$package.'/';
 
 our $ua = LWP::UserAgent->new(agent => basename($0));
@@ -419,6 +419,10 @@ sub create_new_symbols {
 				# | libgdal20 #MINVER#, gdal-abi-2-0-0
 				# #include "libgdal20.symbols.common"
 
+				# libgdal.so.28 #PACKAGE# #MINVER#
+				# | libgdal20 #MINVER#, gdal-abi-2-0-0
+				# #include "libgdal20.symbols.common"
+
 				my $data = '';
 
 				my $i = 0;
@@ -581,7 +585,7 @@ sub create_patch_file {
 		}
 		# + VRTSourcedRasterBand::ComputeRasterMinMax(int, double*)@Base 1.10.1
 		elsif(/^\+ (.*?) (\d+\.\d+\.\d+\S*)\s*$/) {
-			$_ = '+ (c++)"'.$1.'" '.$2." 1\n";
+			$_ = '+ (c++)"'.$1.'" '.$2."\n";
 		}
 		# + VRTSourcedRasterBand::ComputeRasterMinMax(int, double*)@Base 1.10.1 1
 		elsif(/^\+ (.*?) (\d+\.\d+\.\d+\S*)(\s+\d+)\s*$/) {
@@ -856,6 +860,8 @@ sub compare_new_symbols {
 							print "Copy: $file1 -> $file2\n" if($cfg{verbose});
 
 							copy($file1, $file2) || die "Error: Failed to copy $file1 to $file2 ($!)\n";
+
+							replace_package_name($file2);
 						}
 						else {
 							print "Error: Cannot read $file1 and/or write $file2\n";
@@ -939,6 +945,8 @@ sub compare_new_symbols {
 									print "Copy: $file1 -> $file2\n" if($cfg{verbose});
 
 									copy($file1, $file2) || die "Error: Failed to copy $file1 to $file2 ($!)\n";
+
+									replace_package_name($file2);
 								}
 								else {
 									print "Error: Cannot read $file1 and/or write $file2\n";
@@ -982,6 +990,7 @@ sub parse_symbols {
 		# libgdal.so.20 libgdal20 #MINVER#
 		# | libgdal20 #MINVER#, gdal-abi-2-0-0
 		# #include "libgdal20.symbols.common"
+		#
 		#  (c++)"PamGetProxy(char const*)@Base" 1.8.0 1
 		elsif(/^ (\S+)\s+(\d+\S+\d+)\s*(\d+)\s*$/) {
 			my $symbol   = $1;
@@ -1148,17 +1157,16 @@ sub new_architecture_symbols {
 						}
 					}
 
-					if(!$abi) {
-						print "Error: Failed to extract ABI dependency from control file: $control\n";
-						exit 1;
-					}
-
 					my $i = 0;
 					foreach(read_file($filt)) {
+						if(/^(libgdal\.so\.\d+) libgdal\d+ (.MINVER.)/) {
+							$_  = "$1 #PACKAGE# $2\n";
+							$_ .= "* Build-Depends-Package: libgdal-dev\n";
+						}
 						if($i == 0 && /^ /) {
 							$_ = "#include \"${pkg}.symbols.common\"\n" . $_;
 							$_ = "* Build-Depends-Package: libgdal-dev\n" . $_;
-							$_ = "| ${pkg} #MINVER#, $abi\n" . $_;
+							$_ = "| ${pkg} #MINVER#, $abi\n" . $_ if($abi);
 
 							$i++;
 						}
@@ -1227,6 +1235,8 @@ sub new_architecture_symbols {
 							print "Copy: $file1 -> $file2\n" if($cfg{verbose});
 
 							copy($file1, $file2) || die "Error: Failed to copy $file1 to $file2 ($!)\n";
+
+							replace_package_name($file2);
 						}
 						else {
 							print "Warning: Cannot read $file1 and/or write $file2\n";
@@ -1250,6 +1260,28 @@ sub new_architecture_symbols {
 	else {
 		print "Error: Cannot read/write directory: $dir\n";
 		return;
+	}
+}
+
+sub replace_package_name {
+	my ($file) = @_;
+
+	my $data = '';
+
+	my $changed = 0;
+	foreach(read_file($file)) {
+		# libgdal.so.28 libgdal28 #MINVER#
+		if(/^(libgdal\.so\.\d+) libgdal\d+ (.MINVER.)/) {
+			$_ = "$1 #PACKAGE# $2\n";
+
+			$changed = 1;
+		}
+
+		$data .= $_;
+	}
+
+	if($changed) {
+		write_file($file, $data);
 	}
 }
 

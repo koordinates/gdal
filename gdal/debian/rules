@@ -11,31 +11,22 @@
 # Enable hardening build flags
 export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 
-# KX: don't strip debugging symbols
-export DEB_BUILD_OPTIONS=nostrip
-
-# Workaround for proj_api.h deprecation in PROJ 6.0.0
-export DEB_CFLAGS_MAINT_APPEND=-DACCEPT_USE_OF_DEPRECATED_PROJ_API_H
-
 # Disable PIE on Ubuntu where it's still problematic
 VENDOR_DERIVES_FROM_UBUNTU ?= $(shell dpkg-vendor --derives-from Ubuntu && echo yes)
 DISTRIBUTION_RELEASE       := $(shell lsb_release -cs)
 
 ifeq ($(VENDOR_DERIVES_FROM_UBUNTU),yes)
-  ifneq (,$(filter $(DISTRIBUTION_RELEASE),trusty xenial bionic))
+  ifneq (,$(filter $(DISTRIBUTION_RELEASE),xenial bionic))
     export DEB_BUILD_MAINT_OPTIONS=hardening=+all,-pie
   endif
 endif
 
 include /usr/share/dpkg/pkg-info.mk
 
-DPKG_EXPORT_BUILDFLAGS = 1
-include /usr/share/dpkg/buildflags.mk
-
 UPSTREAM_VERSION = $(shell echo $(DEB_VERSION_UPSTREAM) | sed -e 's/\+.*//')
 
-PYVERS=3.7
-PYDEF=3.7
+PYVERS=$(shell py3versions -v -r)
+PYDEF=$(shell py3versions -dv)
 PERLDEF=$(shell perl -V:version|cut -d\' -f2)
 SWIGVER=$(shell swig -version |grep Version|cut -d' ' -f3|sed -e 's/\.//g')
 
@@ -52,6 +43,21 @@ ifneq ($(wildcard /usr/lib/$(DEB_HOST_MULTIARCH)/hdf5/serial/libhdf5.so),)
   WITH_HDF5:=--with-hdf5=/usr/lib/$(DEB_HOST_MULTIARCH)/hdf5/serial
 else
   WITH_HDF5:=
+endif
+
+# See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98189
+ifneq (,$(filter $(DEB_HOST_ARCH),sh3 sh4))
+  export DEB_CXXFLAGS_MAINT_APPEND=-fno-guess-branch-probability
+endif
+
+ifneq (,$(filter $(DEB_HOST_ARCH),amd64 i386))
+  WITH_SSE=yes
+  WITH_SSSE3=yes
+  WITH_AVX=yes
+else
+  WITH_SSE=no
+  WITH_SSSE3=no
+  WITH_AVX=no
 endif
 
 NJOBS := -j1
@@ -92,7 +98,7 @@ gdal-mrsid-dist:
 
 %:
 	if [ "$@" != "gdal-grass" -a "$@" != "gdal-ecw" -a "$@" != "gdal-mrsid" ]; then \
-		dh $@ --with autoreconf,python3 --parallel ; \
+		dh $@ --with python3 ; \
 	fi
 
 override_dh_clean:
@@ -101,7 +107,6 @@ override_dh_clean:
 override_dh_auto_clean:
 	[ ! -f GDALmake.opt ] || $(MAKE) distclean
 	rm -rf $(CURDIR)/swig/perl/*.bs $(CURDIR)/swig/perl/doc
-	rm -rf $(CURDIR)/swig/java/*.so $(CURDIR)/swig/java/*.o $(CURDIR)/swig/java/build/ $(CURDIR)/swig/java/*.jar $(CURDIR)/swig/java/.libs
 	rm -rf $(CURDIR)/.libs
 	rm -f GDALmake.opt-*
 	rm -rf $(CURDIR)/debian/tmp $(CURDIR)/debian/python-tmp
@@ -109,38 +114,42 @@ override_dh_auto_clean:
 	rm -rf $(CURDIR)/frmts/o/.libs
 	rm -f  $(CURDIR)/islibdappost310.*
 
-#--with-hide-internal-symbols=yes \
-#--with-rename-internal-libtiff-symbols=yes \
-#--with-rename-internal-libgeotiff-symbols=yes \
-
 override_dh_auto_configure:
 	for V in $(PYVERS); do \
 		PYTHON=/usr/bin/python$$V ./configure --prefix=/usr \
 			--mandir=\$$\{prefix\}/share/man \
 			--includedir=\$$\{prefix\}/include/gdal \
-			--with-pic \
+			--with-hide-internal-symbols=yes \
+			--with-rename-internal-libtiff-symbols=yes \
+			--with-rename-internal-libgeotiff-symbols=yes \
 			--with-threads \
+			--with-sse=$(WITH_SSE) \
+			--with-ssse3=$(WITH_SSSE3) \
+			--with-avx=$(WITH_AVX) \
+			--with-bash-completion=yes \
 			--with-armadillo=yes \
-			--with-cfitsio=no \
+			--with-cfitsio=yes \
 			--with-charls \
 			--with-curl \
+			--with-libdeflate \
 			--with-ecw=no \
 			--with-epsilon=/usr \
 			--with-freexl=yes \
 			--with-geos \
-			--with-geotiff=internal \
+			--with-geotiff=yes \
 			--with-grass=no \
 			$(WITH_HDF5) \
+			--with-heif \
 			--with-libjson-c=/usr \
 			--with-libkml=yes \
 			--with-liblzma=yes \
-			--with-libtiff=internal \
+			--with-libtiff=yes \
 			--with-mrsid=no \
 			--with-mysql \
 			--with-netcdf \
 			--with-odbc \
 			--with-ogdi \
-			--with-openjpeg=no \
+			--with-openjpeg=yes \
 			--with-pg \
 			--with-poppler=yes \
 			--with-proj=yes \
@@ -152,12 +161,8 @@ override_dh_auto_configure:
 			--with-xerces \
 			--with-zstd \
 			--with-dods-root=/usr \
-			--with-java=/usr/lib/jvm/default-java \
 			--with-perl \
-			--with-python \
-            --with-kea=/usr/bin/kea-config \
-			--with-fgdb=/usr/local \
-			--with-kakadu=/usr/local ; \
+			--with-python; \
 		mv GDALmake.opt GDALmake.opt-$$V; \
 	done
 
@@ -166,7 +171,6 @@ override_dh_auto_build:
 	$(MAKE) $(NJOBS) lib-target apps-target
 	rm -rf $(CURDIR)/swig/perl/*.c  $(CURDIR)/swig/perl/*.cpp
 	$(MAKE) $(NJOBS) -C $(CURDIR)/swig/perl generate build doc
-	$(MAKE) $(NJOBS) -C $(CURDIR)/swig/java clean generate build
 
 	# It needs pre-installing just after the building due to intermediate cleaning.
 	for V in $(PYVERS); do \
@@ -177,30 +181,16 @@ override_dh_auto_build:
 		$(MAKE) $(NJOBS) -C $(CURDIR)/swig/python install DESTDIR=$(CURDIR)/debian/python-tmp; \
 	done
 
-	mkdir $(CURDIR)/html || true
-	$(MAKE) $(NJOBS) docs
-	$(MAKE) $(NJOBS) man
-
 override_dh_auto_install:
 	cp `ls GDALmake.opt-*|tail -1` GDALmake.opt
-	$(MAKE) $(NJOBS) install BINDINGS="perl java" DESTDIR=$(CURDIR)/debian/tmp
-	$(MAKE) $(NJOBS) install-docs DESTDIR=$(CURDIR)/debian/tmp \
-		"INST_DOCS=\$$(prefix)/share/doc/libgdal-doc"\
-		"INST_MAN=\$$(prefix)/share/man"
+	$(MAKE) $(NJOBS) install BINDINGS="perl" DESTDIR=$(CURDIR)/debian/tmp
 	$(MAKE) $(NJOBS) install-man DESTDIR=$(CURDIR)/debian/tmp \
-		"INST_DOCS=\$$(prefix)/share/doc/libgdal-doc"\
 		"INST_MAN=\$$(prefix)/share/man"
 
 	# install python stuff previuosly built and pre-installed
 	cp -a $(CURDIR)/debian/python-tmp/usr/lib/* $(CURDIR)/debian/tmp/usr/lib/.
 	install -o root -g root -d $(CURDIR)/debian/tmp/usr/bin
 	install -o root -g root -m 755 $(CURDIR)/swig/python/scripts/*.py $(CURDIR)/debian/tmp/usr/bin/.
-
-	# java stuff
-	mkdir -p $(CURDIR)/debian/tmp/usr/share/java $(CURDIR)/debian/tmp/usr/lib/jni
-	install -o root -g root -m 644 $(CURDIR)/swig/java/gdal.jar $(CURDIR)/debian/tmp/usr/share/java/.
-	install -o root -g root -m 644 $(CURDIR)/debian/tmp/usr/lib/*jni.so* $(CURDIR)/debian/tmp/usr/lib/jni
-	rm -f $(CURDIR)/debian/tmp/usr/lib/*jni.so*
 
 	# removing useless autogenerated man pages
 	rm -f $(CURDIR)/debian/tmp/usr/share/man/man1/_*_apps_.1
@@ -231,14 +221,14 @@ override_dh_installdocs:
 	rm -f $(CURDIR)/debian/*/usr/share/doc/libgdal-perl-doc/*/*.md5
 
 override_dh_python3:
-	dh_python3 -X.info -ppython3-gdal
-	dh_numpy3 -ppython3-gdal
+	dh_python3 -X.info -pgdal-bin -ppython3-gdal --shebang=/usr/bin/python3
+	dh_numpy3 -pgdal-bin -ppython3-gdal
 
 override_dh_makeshlibs:
 	# Forces failure ignoring to collect new symbols on all archs
-	dh_makeshlibs -Xlibgdal-java -- -v$(UPSTREAM_VERSION) -c0
+	dh_makeshlibs -- -v$(UPSTREAM_VERSION) -c0
 	# Forces failure when symbols change
-	#dh_makeshlibs -Xlibgdal-java -- -v$(UPSTREAM_VERSION)
+	#dh_makeshlibs -- -v$(UPSTREAM_VERSION)
 
 override_dh_shlibdeps:
-	dh_shlibdeps -L libgdal20 -l debian/libgdal20/usr/lib
+	dh_shlibdeps -L libgdal26 -l debian/libgdal26/usr/lib

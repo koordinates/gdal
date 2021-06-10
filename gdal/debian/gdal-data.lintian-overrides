@@ -1,3 +1,6 @@
-# False positive on: "(319) 369-3131"
-copyright-year-in-future 3131 *
+# Not a problem
+national-encoding usr/share/gdal/s57expectedinput.csv
+
+# Not documentation
+package-contains-documentation-outside-usr-share-doc usr/share/gdal/pci_*.txt
 

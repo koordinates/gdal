@@ -1,8 +1,0 @@
-# False positive on: {136, "Socialist Republic of Viet Nam"},
-spelling-error-in-binary * Nam Name
-
-# False positive on: "(319) 369-3131"
-copyright-year-in-future 3131 *
-
-# Cannot easily be fixed
-file-references-package-build-path *
