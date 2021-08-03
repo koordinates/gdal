@@ -131,7 +131,6 @@ override_dh_auto_configure:
 			--with-cfitsio=yes \
 			--with-charls \
 			--with-curl \
-			--with-libdeflate \
 			--with-ecw=no \
 			--with-epsilon=/usr \
 			--with-freexl=yes \
