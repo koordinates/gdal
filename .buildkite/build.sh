@@ -30,7 +30,7 @@ time docker run \
   -e DEBEMAIL \
   -e DEBFULLNAME \
   "${ECR}/ci-tools:latest" \
-    dch --distribution bionic --newversion "${DEB_VERSION}" "Koordinates CI build of ${BUILDKITE_COMMIT}: branch=${BUILDKITE_BRANCH} tag=${BUILDKITE_TAG-}"
+    dch --distribution focal --newversion "${DEB_VERSION}" "Koordinates CI build of ${BUILDKITE_COMMIT}: branch=${BUILDKITE_BRANCH} tag=${BUILDKITE_TAG-}"
 
 BUILD_CONTAINER="build-${BUILDKITE_JOB_ID}"
 
@@ -42,7 +42,7 @@ time docker run \
   -v "ccache:/ccache" \
   -e CCACHE_DIR=/ccache \
   -w "/kx/source/gdal" \
-  "${ECR}/bionicbuild:latest" \
+  "${ECR}/focalbuild:latest" \
     /kx/buildscripts/build_binary_package.sh -uc -us
 
 echo "--- Signing debian archives ..."
@@ -51,7 +51,7 @@ time docker run \
   -e "GPG_KEY=${APT_GPG_KEY}" \
   -w "/src" \
   "${ECR}/ci-tools:latest" \
-    sign-debs "/src/build-bionic/*.deb"
+    sign-debs "/src/build-focal/*.deb"
 
 echo "--- Running tests ..."
 TEST_IMAGE="test-${BUILDKITE_JOB_ID}"
@@ -68,7 +68,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y curl
 curl --silent https://bootstrap.pypa.io/get-pip.py 'pip<19' | python3 -
 pip install 'pytest'
 
-DEBIAN_FRONTEND=noninteractive dpkg -i ../build-bionic/{gdal-bin,gdal-data,libgdal20,python3-gdal}*.deb
+DEBIAN_FRONTEND=noninteractive dpkg -i ../build-focal/{gdal-bin,gdal-data,libgdal20,python3-gdal}*.deb
 
 # skip known failures
 rm gcore/rfc30.py

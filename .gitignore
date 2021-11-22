@@ -35,3 +35,6 @@ gdal/packages*
 gdal/share
 
 
+# kx
+build/
+build-focal/
