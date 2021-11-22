@@ -53,10 +53,7 @@ Build-Depends: debhelper-compat (= 10),
                swig,
                unixodbc-dev (>= 2.2.11),
                zlib1g-dev,
-               libssl-dev,
-               libesri-filegdb,
-               libkakadu,
-               libkea1.4
+               libssl-dev
 Build-Conflicts: automake1.11
 Standards-Version: 4.6.0
 Vcs-Browser: https://salsa.debian.org/debian-gis-team/gdal
@@ -128,8 +125,6 @@ Depends: libgdal29 (= ${binary:Version}),
          libxml2-dev,
          libzstd-dev,
          unixodbc-dev,
-         libesri-filegdb,
-         libkakadu,
          ${misc:Depends}
 Description: Geospatial Data Abstraction Library - Development files
  GDAL is a translator library for raster geospatial data formats.

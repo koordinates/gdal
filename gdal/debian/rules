@@ -165,10 +165,7 @@ override_dh_auto_configure:
 			--with-xerces \
 			--with-zstd \
 			--with-perl \
-			--with-python \
-            --with-kea=/usr/bin/kea-config \
-            --with-fgdb=/usr/local \
-            --with-kakadu=/usr/local ; \
+			--with-python ; \
 		mv GDALmake.opt GDALmake.opt-$$V; \
 	done
 
