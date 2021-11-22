@@ -1,0 +1,6 @@
+# Not a problem
+national-encoding usr/share/gdal/s57expectedinput.csv
+
+# Not documentation
+package-contains-documentation-outside-usr-share-doc usr/share/gdal/pci_*.txt
+

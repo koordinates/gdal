@@ -1,0 +1,3 @@
+# GDAL doesn't use Multi-Arch, it breaks too many rdeps
+pkg-config-unavailable-for-cross-compilation usr/lib/pkgconfig/gdal.pc
+

@@ -1,0 +1,17 @@
+GDAL source for Debian
+----------------------
+
+This package uses quilt to manage all modifications to the upstream
+source. Changes are stored in the source package as diffs in
+debian/patches and applied during the build.
+
+To get detailed instructions on how to apply the series of patches
+and modify them, please read /usr/share/doc/quilt/README.source.
+
+Note that debian/rules includes three targets (gdal-{grass,ecw,mrsid})
+to autogenerate Grass/ECW/MrSID external plugins, which are coherent
+with the plain package provided in Debian. The only plugin which 
+is supported upstream is the Grass one. Do not bother upstream 
+with bugs or requests about the other ones.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 23 Feb 2012 22:45:56 +0200

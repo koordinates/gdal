@@ -1,0 +1,7 @@
+# False positive on: {136, "Socialist Republic of Viet Nam"},
+spelling-error-in-binary * Nam Name
+
+# False positive, string not included in source
+spelling-error-in-binary * increaS increase
+spelling-error-in-binary * lengH length
+

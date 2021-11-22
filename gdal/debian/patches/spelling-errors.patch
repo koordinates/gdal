@@ -1,0 +1,127 @@
+Description: Fix spelling errors.
+ * Allows to <verb> -> Allows <verb>ing
+Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: https://github.com/OSGeo/gdal/pull/3700
+Applied-Upstream: https://github.com/OSGeo/gdal/commit/741128382087d9663f2bb21461a7d42b2022ec77
+
+--- a/swig/perl/gdal_wrap.cpp
++++ b/swig/perl/gdal_wrap.cpp
+@@ -279,7 +279,7 @@ template <typename T> T SwigValueInit()
+    SWIG errors code.
+ 
+    Finally, if the SWIG_CASTRANK_MODE is enabled, the result code
+-   allows to return the 'cast rank', for example, if you have this
++   allows returning the 'cast rank', for example, if you have this
+ 
+        int food(double)
+        int fooi(int);
+--- a/swig/perl/gdalconst_wrap.c
++++ b/swig/perl/gdalconst_wrap.c
+@@ -255,7 +255,7 @@
+    SWIG errors code.
+ 
+    Finally, if the SWIG_CASTRANK_MODE is enabled, the result code
+-   allows to return the 'cast rank', for example, if you have this
++   allows returning the 'cast rank', for example, if you have this
+ 
+        int food(double)
+        int fooi(int);
+--- a/swig/perl/gnm_wrap.cpp
++++ b/swig/perl/gnm_wrap.cpp
+@@ -279,7 +279,7 @@ template <typename T> T SwigValueInit()
+    SWIG errors code.
+ 
+    Finally, if the SWIG_CASTRANK_MODE is enabled, the result code
+-   allows to return the 'cast rank', for example, if you have this
++   allows returning the 'cast rank', for example, if you have this
+ 
+        int food(double)
+        int fooi(int);
+--- a/swig/perl/ogr_wrap.cpp
++++ b/swig/perl/ogr_wrap.cpp
+@@ -279,7 +279,7 @@ template <typename T> T SwigValueInit()
+    SWIG errors code.
+ 
+    Finally, if the SWIG_CASTRANK_MODE is enabled, the result code
+-   allows to return the 'cast rank', for example, if you have this
++   allows returning the 'cast rank', for example, if you have this
+ 
+        int food(double)
+        int fooi(int);
+--- a/swig/perl/osr_wrap.cpp
++++ b/swig/perl/osr_wrap.cpp
+@@ -279,7 +279,7 @@ template <typename T> T SwigValueInit()
+    SWIG errors code.
+ 
+    Finally, if the SWIG_CASTRANK_MODE is enabled, the result code
+-   allows to return the 'cast rank', for example, if you have this
++   allows returning the 'cast rank', for example, if you have this
+ 
+        int food(double)
+        int fooi(int);
+--- a/swig/python/extensions/gdal_array_wrap.cpp
++++ b/swig/python/extensions/gdal_array_wrap.cpp
+@@ -290,7 +290,7 @@ template <typename T> T SwigValueInit()
+    SWIG errors code.
+ 
+    Finally, if the SWIG_CASTRANK_MODE is enabled, the result code
+-   allows to return the 'cast rank', for example, if you have this
++   allows returning the 'cast rank', for example, if you have this
+ 
+        int food(double)
+        int fooi(int);
+--- a/swig/python/extensions/gdal_wrap.cpp
++++ b/swig/python/extensions/gdal_wrap.cpp
+@@ -291,7 +291,7 @@ template <typename T> T SwigValueInit()
+    SWIG errors code.
+ 
+    Finally, if the SWIG_CASTRANK_MODE is enabled, the result code
+-   allows to return the 'cast rank', for example, if you have this
++   allows returning the 'cast rank', for example, if you have this
+ 
+        int food(double)
+        int fooi(int);
+--- a/swig/python/extensions/gdalconst_wrap.c
++++ b/swig/python/extensions/gdalconst_wrap.c
+@@ -267,7 +267,7 @@
+    SWIG errors code.
+ 
+    Finally, if the SWIG_CASTRANK_MODE is enabled, the result code
+-   allows to return the 'cast rank', for example, if you have this
++   allows returning the 'cast rank', for example, if you have this
+ 
+        int food(double)
+        int fooi(int);
+--- a/swig/python/extensions/gnm_wrap.cpp
++++ b/swig/python/extensions/gnm_wrap.cpp
+@@ -291,7 +291,7 @@ template <typename T> T SwigValueInit()
+    SWIG errors code.
+ 
+    Finally, if the SWIG_CASTRANK_MODE is enabled, the result code
+-   allows to return the 'cast rank', for example, if you have this
++   allows returning the 'cast rank', for example, if you have this
+ 
+        int food(double)
+        int fooi(int);
+--- a/swig/python/extensions/ogr_wrap.cpp
++++ b/swig/python/extensions/ogr_wrap.cpp
+@@ -291,7 +291,7 @@ template <typename T> T SwigValueInit()
+    SWIG errors code.
+ 
+    Finally, if the SWIG_CASTRANK_MODE is enabled, the result code
+-   allows to return the 'cast rank', for example, if you have this
++   allows returning the 'cast rank', for example, if you have this
+ 
+        int food(double)
+        int fooi(int);
+--- a/swig/python/extensions/osr_wrap.cpp
++++ b/swig/python/extensions/osr_wrap.cpp
+@@ -291,7 +291,7 @@ template <typename T> T SwigValueInit()
+    SWIG errors code.
+ 
+    Finally, if the SWIG_CASTRANK_MODE is enabled, the result code
+-   allows to return the 'cast rank', for example, if you have this
++   allows returning the 'cast rank', for example, if you have this
+ 
+        int food(double)
+        int fooi(int);
