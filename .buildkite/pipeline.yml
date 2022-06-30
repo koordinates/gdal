@@ -4,6 +4,7 @@ steps:
     command: ".buildkite/build.sh"
     artifact_paths:
       - "build-focal/*"
+      - "gdal/swig/python/*.whl"
 
   - block: "Release?"
     prompt: "Tag & Release to archive? Check the test results first!"
@@ -42,3 +43,17 @@ steps:
         environment:
           - APTLY_UNAME
           - APTLY_PASSWD
+
+  - label: ":rocket::python: upload to devpi :ship:"
+    command:
+      - "devpi-upload gdal/swig/python/*.whl"
+    plugins:
+      artifacts#v1.2.0:
+        download: "gdal/swig/python/*"
+      docker#v1.4.0:
+        image: "${ECR}/ci-tools:latest"
+        environment:
+          - DEVPI_USERNAME
+          - DEVPI_PASSWORD
+    retry:
+      automatic: true

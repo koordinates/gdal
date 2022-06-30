@@ -12,16 +12,20 @@ export DEBFULLNAME="Koordinates CI Builder"
 
 echo "Updating changelog..."
 
-DEB_BASE_VERSION=$(cat gdal/VERSION)
-DEB_VERSION="${DEB_BASE_VERSION}+kx-ci${BUILDKITE_BUILD_NUMBER}-$(git show -s --date=format:%Y%m%d --format=git%cd.%h)"
+BASE_VERSION=$(cat gdal/VERSION)
+DEB_VERSION="${BASE_VERSION}+kx-ci${BUILDKITE_BUILD_NUMBER}-$(git show -s --date=format:%Y%m%d --format=git%cd.%h)"
 echo "Debian Package Version: ${DEB_VERSION}"
+PY_VERSION="${BASE_VERSION}.dev${BUILDKITE_BUILD_NUMBER}"
 
 if [ -n "${BUILDKITE_AGENT_ACCESS_TOKEN-}" ] ; then 
-  buildkite-agent meta-data set deb-base-version "$DEB_BASE_VERSION"
+  buildkite-agent meta-data set deb-base-version "$BASE_VERSION"
   buildkite-agent meta-data set deb-version "$DEB_VERSION"
+  buildkite-agent meta-data set py-version "$PY_VERSION"
 
-  echo -e ":debian: Package Version: \`${DEB_VERSION}\`" \
+  echo -e ":debian: DEB Package Version: \`${DEB_VERSION}\`" \
       | buildkite-agent annotate --style info --context deb-version
+  echo -e ":python: PYTHON Package Version: \`${PY_VERSION}\`" \
+      | buildkite-agent annotate --style info --context py-version
 fi
 
 time docker run \
@@ -52,6 +56,16 @@ time docker run \
   -w "/src" \
   "${ECR}/ci-tools:latest" \
     sign-debs "/src/build-focal/*.deb"
+
+echo "--- Building python wheels to match deb package ..."
+for PYVER in "3.8" ; do
+  docker run \
+    --rm -v "$(pwd):/src" \
+    -w /src \
+    -e "GDAL_PY_VERSION=${PY_VERSION}" \
+    "python:$PYVER" \
+    .buildkite/build-wheel.sh
+done
 
 echo "--- Running tests ..."
 TEST_IMAGE="test-${BUILDKITE_JOB_ID}"
