@@ -1085,8 +1085,15 @@ CPLErr netCDFRasterBand::SetMetadataItem( const char* pszName,
                                           const char* pszValue,
                                           const char* pszDomain )
 {
-    if( GetAccess() == GA_Update &&
-        (pszDomain == nullptr || pszDomain[0] == '\0') && pszValue != nullptr )
+    if( GetAccess() != GA_Update )
+    {
+        CPLError(CE_Failure, CPLE_AppDefined,
+                  "netCDFRasterBand::SetMetadataItem() can only be "
+                  "called in update mode");
+        return CE_Failure;
+    }
+
+    if( (pszDomain == nullptr || pszDomain[0] == '\0') && pszValue != nullptr )
     {
         // Same logic as in CopyMetadata()
 
@@ -1123,8 +1130,7 @@ CPLErr netCDFRasterBand::SetMetadataItem( const char* pszName,
 
 CPLErr netCDFRasterBand::SetMetadata( char** papszMD, const char* pszDomain )
 {
-    if( GetAccess() == GA_Update &&
-        (pszDomain == nullptr || pszDomain[0] == '\0') )
+    if( pszDomain == nullptr || pszDomain[0] == '\0' )
     {
         // We don't handle metadata item removal for now
         for( const char* const*  papszIter = papszMD; papszIter && *papszIter; ++papszIter )
@@ -2914,8 +2920,15 @@ CPLErr netCDFDataset::SetMetadataItem( const char* pszName,
                                           const char* pszValue,
                                           const char* pszDomain )
 {
-    if( GetAccess() == GA_Update &&
-        (pszDomain == nullptr || pszDomain[0] == '\0') && pszValue != nullptr )
+    if( GetAccess() != GA_Update )
+    {
+        CPLError(CE_Failure, CPLE_AppDefined,
+                  "netCDFDataset::SetMetadataItem() can only be "
+                  "called in update mode");
+        return CE_Failure;
+    }
+
+    if( (pszDomain == nullptr || pszDomain[0] == '\0') && pszValue != nullptr )
     {
         std::string osName(pszName);
 
@@ -2948,8 +2961,7 @@ CPLErr netCDFDataset::SetMetadataItem( const char* pszName,
 
 CPLErr netCDFDataset::SetMetadata( char** papszMD, const char* pszDomain )
 {
-    if( GetAccess() == GA_Update &&
-        (pszDomain == nullptr || pszDomain[0] == '\0') )
+    if( pszDomain == nullptr || pszDomain[0] == '\0' )
     {
         // We don't handle metadata item removal for now
         for( const char* const*  papszIter = papszMD; papszIter && *papszIter; ++papszIter )

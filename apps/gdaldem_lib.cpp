@@ -2012,7 +2012,6 @@ ColorAssociation* GDALColorReliefParseColorFile( GDALRasterBandH hSrcBand,
     {
         CPLError(CE_Failure, CPLE_AppDefined,
                  "No color association found in %s", pszColorFilename);
-        CPLFree(pasColorAssociation);
         *pnColors = 0;
         return nullptr;
     }

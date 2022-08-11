@@ -311,13 +311,13 @@ GDALDataset* GDALNullDataset::Open(GDALOpenInfo* poOpenInfo)
 /************************************************************************/
 
 GDALDataset *GDALNullDataset::Create(const char *,
-                                     int nXSize, int nYSize, int nBandsIn,
+                                     int nXSize, int nYSize, int nBands,
                                      GDALDataType eType, char **)
 {
     GDALNullDataset* poDS = new GDALNullDataset();
     poDS->nRasterXSize = nXSize;
     poDS->nRasterYSize = nYSize;
-    for( int i = 0; i < nBandsIn; i++ )
+    for( int i = 0; i < nBands; i++ )
         poDS->SetBand(i + 1, new GDALNullRasterBand(eType));
     return poDS;
 }
