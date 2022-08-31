@@ -75,7 +75,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y curl
 curl --silent https://bootstrap.pypa.io/get-pip.py 'pip<19' | python3 -
 pip install 'pytest'
 
-DEBIAN_FRONTEND=noninteractive dpkg -i ../build-focal/{gdal-bin,gdal-data,libgdal20,python3-gdal}*.deb
+DEBIAN_FRONTEND=noninteractive dpkg -i ../build-focal/{gdal-bin,gdal-data,libgdal,python3-gdal}*.deb
 
 # skip known failures
 rm gcore/rfc30.py
