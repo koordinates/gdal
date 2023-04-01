@@ -1,0 +1,13 @@
+# False positive, string not included in source
+spelling-error-in-binary AfE Safe *
+spelling-error-in-binary Accesss Access *
+
+# False positive, Lat/Lon
+spelling-error-in-binary lon long *
+
+# False positive, Invalid txe or tye parameters detected. Please check your -txe or -tye argument.
+spelling-error-in-binary tye type *
+
+# GDAL uses external libjpeg
+embedded-library * libjpeg
+
