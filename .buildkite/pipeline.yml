@@ -1,0 +1,41 @@
+---
+steps:
+  - group: ":debian: Build & Package"
+    steps:
+      - label: "build package (amd64)"
+        command: ".buildkite/build.sh"
+        artifact_paths:
+          - "build-jammy/*"
+        agents:
+          queue: default
+      - label: "build package (arm64)"
+        command: ".buildkite/build.sh"
+        artifact_paths:
+          - "build-jammy/*"
+        agents:
+          queue: default_arm64
+
+  - block: "Release?"
+    prompt: "Release to archive?"
+
+  - label: ":debian: Publish deb"
+    command:
+      - >
+        aptly-upload
+        --aptly-url https://apt-repo.kx.gd
+        --retries 3
+        --repo kx-builds-jammy
+        --series jammy
+        build-jammy/*.deb
+    retry:
+      automatic: true
+    plugins:
+      artifacts#v1.2.0:
+        download: "build-jammy/*.deb"
+      docker#v1.4.0:
+        image: "${ECR}/ci-tools"
+        always-pull: true
+        workdir: /src
+        environment:
+          - APTLY_UNAME
+          - APTLY_PASSWD
