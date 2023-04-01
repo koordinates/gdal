@@ -34,6 +34,11 @@ time docker run \
 
 BUILD_CONTAINER="build-${BUILDKITE_JOB_ID}"
 
+# the autotest tests don't work, because there's no pytest in the build environment.
+# so we copy the ubuntugis approach of just removing them.
+# the gdal fuzzer tests still run (fuzzers/tests)
+rm -rf ./autotest
+
 echo "--- Building debian package ..."
 # Uses a docker volume for ccache
 time docker run \
