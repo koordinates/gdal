@@ -19,6 +19,13 @@ PYVERS=$(shell py3versions -sv)
 PYDEF=$(shell py3versions -dv)
 SWIGVER=$(shell swig -version |grep Version|cut -d' ' -f3|sed -e 's/\.//g')
 
+# there's no kakadu build for arm64, so we'll have to fallback to openjpeg there.
+ifeq ($(DEB_HOST_ARCH),amd64)
+  GDAL_USE_KDU=ON
+else
+  GDAL_USE_KDU=OFF
+endif
+
 GDALVER=$(shell cat VERSION|sed -e 's/\./ /g')
 GDAL_MAJOR=$(word 1,$(GDALVER))
 GDAL_MINOR=$(word 2,$(GDALVER))
@@ -95,6 +102,10 @@ override_dh_auto_configure:
 			-DGDAL_USE_XERCESC=ON \
 			-DGDAL_USE_ZSTD=ON \
 			-DGDAL_USE_KEA=ON \
+			-DGDAL_USE_KDU=$(GDAL_USE_KDU) \
+			-DKDU_LIBRARY=/usr/local/lib/libkdu_v83R.so \
+			-DKDU_ROOT=/usr/local \
+			-DKDU_AUX_LIBRARY=/usr/local/lib/libkdu_v83R.so \
 		; \
 	done
 
