@@ -34,7 +34,7 @@ Build-Depends: debhelper-compat (= 10),
                libpng-dev,
                libpoppler-private-dev,
                libpq-dev,
-               proj (>= 9),
+               libproj-dev (>= 6.0.0),
                libqhull-dev,
                libsqlite3-dev,
                liburiparser-dev,
@@ -65,6 +65,7 @@ Section: libs
 Depends: gdal-data (>= ${source:Version}),
          ${shlibs:Depends},
          ${misc:Depends}
+Recommends: proj-bin
 Description: Geospatial Data Abstraction Library
  GDAL is a translator library for raster geospatial data formats.
  As a library, it presents a single abstract data model to the
@@ -112,7 +113,7 @@ Depends: libgdal29 (= ${binary:Version}),
          libpng-dev,
          libpoppler-private-dev,
          libpq-dev,
-         proj (>= 9),
+         libproj-dev (>= 6.0.0),
          libqhull-dev,
          libsqlite3-dev,
          libtiff-dev,
