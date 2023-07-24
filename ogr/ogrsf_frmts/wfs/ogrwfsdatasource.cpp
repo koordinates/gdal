@@ -161,8 +161,8 @@ OGRWFSDataSource::OGRWFSDataSource()
       bGmlObjectIdNeedsGMLPrefix(false), bRequiresEnvelopeSpatialFilter(false),
       bTransactionSupport(false), papszIdGenMethods(nullptr), bUseHttp10(false),
       papszHttpOptions(nullptr),
-      bPagingAllowed(
-          CPLTestBool(CPLGetConfigOption("OGR_WFS_PAGING_ALLOWED", "OFF"))),
+      pszPagingAllowed(
+          CPLGetConfigOption("OGR_WFS_PAGING_ALLOWED", "OFF")),
       nPageSize(DEFAULT_PAGE_SIZE), nBaseStartIndex(DEFAULT_BASE_START_INDEX),
       bStandardJoinsWFS2(false),
       bLoadMultipleLayerDefn(CPLTestBool(
@@ -172,7 +172,7 @@ OGRWFSDataSource::OGRWFSDataSource()
       bKeepLayerNamePrefix(false), bEmptyAsNull(true),
       bInvertAxisOrderIfLatLong(true), bExposeGMLId(true)
 {
-    if (bPagingAllowed)
+    if (CPLTestBool(pszPagingAllowed))
     {
         const char *pszOption =
             CPLGetConfigOption("OGR_WFS_PAGE_SIZE", nullptr);
@@ -621,10 +621,10 @@ bool OGRWFSDataSource::DetectSupportPagingWFS2(
     const CPLXMLNode *psGetCapabilitiesResponse,
     const CPLXMLNode *psConfigurationRoot)
 {
-    const char *pszPagingAllowed = CPLGetConfigOption(
+    const char *pszPagingAllowed_ = CPLGetConfigOption(
         "OGR_WFS_PAGING_ALLOWED",
         CPLGetXMLValue(psConfigurationRoot, "PagingAllowed", nullptr));
-    if (pszPagingAllowed != nullptr && !CPLTestBool(pszPagingAllowed))
+    if (pszPagingAllowed_ != nullptr && !CPLTestBool(pszPagingAllowed_))
         return false;
 
     const CPLXMLNode *psOperationsMetadata =
@@ -707,7 +707,7 @@ bool OGRWFSDataSource::DetectSupportPagingWFS2(
     }
 
     CPLDebug("WFS", "Paging support with page size %d", nPageSize);
-    bPagingAllowed = true;
+    pszPagingAllowed = pszPagingAllowed_ == nullptr ? "YES" : pszPagingAllowed_;
 
     return true;
 }

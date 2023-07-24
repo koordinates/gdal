@@ -361,7 +361,7 @@ CPLString OGRWFSJoinLayer::MakeGetFeatureURL(int bRequestHits)
     osURL = CPLURLAddKVP(osURL, "TYPENAMES", WFS_EscapeURL(osFeatureTypes));
 
     int nRequestMaxFeatures = 0;
-    if (poDS->IsPagingAllowed() && !bRequestHits &&
+    if (CPLTestBool(poDS->GetPagingAllowed()) && !bRequestHits &&
         CPLURLGetValue(osURL, "COUNT").empty())
     {
         osURL = CPLURLAddKVP(

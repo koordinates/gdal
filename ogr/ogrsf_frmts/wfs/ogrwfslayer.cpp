@@ -421,6 +421,7 @@ OGRWFSLayer::BuildLayerDefnFromFeatureClass(GMLFeatureClass *poClass)
 CPLString OGRWFSLayer::MakeGetFeatureURL(int nRequestMaxFeatures,
                                          int bRequestHits)
 {
+    const char *pszPagingAllowed = poDS->GetPagingAllowed();
     CPLString osURL(pszBaseURL);
     osURL = CPLURLAddKVP(osURL, "SERVICE", "WFS");
     osURL = CPLURLAddKVP(osURL, "VERSION", poDS->GetVersion());
@@ -436,11 +437,18 @@ CPLString OGRWFSLayer::MakeGetFeatureURL(int nRequestMaxFeatures,
         osURL = CPLURLAddKVP(osURL, "OUTPUTFORMAT",
                              WFS_EscapeURL(pszRequiredOutputFormat));
 
-    if (poDS->IsPagingAllowed() && !bRequestHits)
+
+    if (CPLTestBool(pszPagingAllowed) && !bRequestHits)
     {
         nRequestMaxFeatures = poDS->GetPageSize();
+        if (EQUAL(pszPagingAllowed, "CHECK_WITH_HITS"))
+        {
+            /* Fetch the feature count if we don't already have it.
+             * Otherwise, we won't be able to determine if we need to do paging. */
+            GetFeatureCount();
+        }
         /* If the feature count is known and is less than the page size, we don't
-         * need to do paging. Skipping the pagination parameters improves compatibility
+         * need to do paging. Omitting the pagination parameters improves compatibility
          * with remote datasources that don't have a primary key.
          * Without a primary key, the WFS server can't support paging, since there
          * is no natural sort order defined. */
@@ -1527,7 +1535,7 @@ int OGRWFSLayer::TestCapability(const char *pszCap)
         return poBaseLayer != nullptr && m_poFilterGeom == nullptr &&
                m_poAttrQuery == nullptr &&
                poBaseLayer->TestCapability(pszCap) &&
-               (!poDS->IsPagingAllowed() &&
+               (!CPLTestBool(poDS->GetPagingAllowed()) &&
                 poBaseLayer->GetFeatureCount() < poDS->GetPageSize());
     }
 

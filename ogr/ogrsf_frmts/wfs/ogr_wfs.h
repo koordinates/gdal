@@ -352,7 +352,7 @@ class OGRWFSDataSource final : public OGRDataSource
 
     char **papszHttpOptions;
 
-    bool bPagingAllowed;
+    const char *pszPagingAllowed;
     int nPageSize;
     int nBaseStartIndex;
     bool DetectSupportPagingWFS2(const CPLXMLNode *psGetCapabilitiesResponse,
@@ -478,9 +478,9 @@ class OGRWFSDataSource final : public OGRDataSource
 
     CPLHTTPResult *HTTPFetch(const char *pszURL, char **papszOptions);
 
-    bool IsPagingAllowed() const
+    const char *GetPagingAllowed() const
     {
-        return bPagingAllowed;
+        return pszPagingAllowed;
     }
     int GetPageSize() const
     {
