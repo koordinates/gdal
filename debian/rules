@@ -103,8 +103,6 @@ override_dh_auto_configure:
 			-DGDAL_USE_XERCESC=OFF \
 			-DGDAL_USE_ZSTD=ON \
 			-DGDAL_USE_KEA=ON \
-			-DGDAL_USE_KDU=ON \
-			-DKDU_ROOT=/usr/local/kakadu \
 		; \
 	done
 
