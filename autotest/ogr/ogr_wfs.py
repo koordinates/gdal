@@ -4025,6 +4025,196 @@ def test_ogr_wfs_vsimem_wfs200_with_no_primary_key(with_and_without_streaming):
             assert f is None
 
 
+def test_ogr_wfs_vsimem_wfs200_paging_with_short_server_response(
+    with_and_without_streaming,
+):
+    # Tests a situation where the server returns less results (1) than we asked for (2)
+    with gdal.config_options(
+        {"OGR_WFS_PAGING_ALLOWED": "ON", "OGR_WFS_PAGE_SIZE": "2"}
+    ):
+        with gdaltest.tempfile(
+            "/vsimem/test_ogr_wfs_vsimem_wfs200_paging_with_short_server_response?SERVICE=WFS&REQUEST=GetCapabilities",
+            """<WFS_Capabilities version="2.0.0">
+                <OperationsMetadata>
+                    <ows:Operation name="GetFeature">
+                        <ows:Constraint name="CountDefault">
+                            <ows:NoValues/>
+                            <ows:DefaultValue>2</ows:DefaultValue>
+                        </ows:Constraint>
+                    </ows:Operation>
+                    <ows:Constraint name="ImplementsResultPaging">
+                        <ows:NoValues/><ows:DefaultValue>TRUE</ows:DefaultValue>
+                    </ows:Constraint>
+                </OperationsMetadata>
+                <FeatureTypeList>
+                    <FeatureType>
+                        <Name>my_layer</Name>
+                        <Title>title</Title>
+                        <Abstract>abstract</Abstract>
+                        <Keywords>
+                            <Keyword>keyword</Keyword>
+                        </Keywords>
+                        <DefaultSRS>urn:ogc:def:crs:EPSG::4326</DefaultSRS>
+                        <ows:WGS84BoundingBox>
+                            <ows:LowerCorner>-180.0 -90.0</ows:LowerCorner>
+                            <ows:UpperCorner>180.0 90.0</ows:UpperCorner>
+                        </ows:WGS84BoundingBox>
+                    </FeatureType>
+                </FeatureTypeList>
+            <ogc:Filter_Capabilities>
+                <ogc:Spatial_Capabilities>
+                <ogc:GeometryOperands>
+                    <ogc:GeometryOperand>gml:Envelope</ogc:GeometryOperand>
+                    <ogc:GeometryOperand>gml:Point</ogc:GeometryOperand>
+                    <ogc:GeometryOperand>gml:LineString</ogc:GeometryOperand>
+                    <ogc:GeometryOperand>gml:Polygon</ogc:GeometryOperand>
+                </ogc:GeometryOperands>
+                <ogc:SpatialOperators>
+                    <ogc:SpatialOperator name="Disjoint"/>
+                    <ogc:SpatialOperator name="Equals"/>
+                    <ogc:SpatialOperator name="DWithin"/>
+                    <ogc:SpatialOperator name="Beyond"/>
+                    <ogc:SpatialOperator name="Intersects"/>
+                    <ogc:SpatialOperator name="Touches"/>
+                    <ogc:SpatialOperator name="Crosses"/>
+                    <ogc:SpatialOperator name="Within"/>
+                    <ogc:SpatialOperator name="Contains"/>
+                    <ogc:SpatialOperator name="Overlaps"/>
+                    <ogc:SpatialOperator name="BBOX"/>
+                </ogc:SpatialOperators>
+                </ogc:Spatial_Capabilities>
+                <ogc:Scalar_Capabilities>
+                <ogc:LogicalOperators/>
+                <ogc:ComparisonOperators>
+                    <ogc:ComparisonOperator>LessThan</ogc:ComparisonOperator>
+                    <ogc:ComparisonOperator>GreaterThan</ogc:ComparisonOperator>
+                    <ogc:ComparisonOperator>LessThanEqualTo</ogc:ComparisonOperator>
+                    <ogc:ComparisonOperator>GreaterThanEqualTo</ogc:ComparisonOperator>
+                    <ogc:ComparisonOperator>EqualTo</ogc:ComparisonOperator>
+                    <ogc:ComparisonOperator>NotEqualTo</ogc:ComparisonOperator>
+                    <ogc:ComparisonOperator>Like</ogc:ComparisonOperator>
+                    <ogc:ComparisonOperator>Between</ogc:ComparisonOperator>
+                    <ogc:ComparisonOperator>NullCheck</ogc:ComparisonOperator>
+                </ogc:ComparisonOperators>
+                <ogc:ArithmeticOperators>
+                    <ogc:SimpleArithmetic/>
+                    <ogc:Functions/>
+                </ogc:ArithmeticOperators>
+                </ogc:Scalar_Capabilities>
+                <ogc:Id_Capabilities>
+                <ogc:FID/>
+                <ogc:EID/>
+                </ogc:Id_Capabilities>
+            </ogc:Filter_Capabilities>
+            </WFS_Capabilities>
+            """,
+        ):
+            gdal.SetConfigOption("CPL_CURL_ENABLE_VSIMEM", "YES")
+
+            ds = ogr.Open(
+                "WFS:/vsimem/test_ogr_wfs_vsimem_wfs200_paging_with_short_server_response"
+            )
+            lyr = ds.GetLayer(0)
+            assert lyr.GetMetadata() == {
+                "ABSTRACT": "abstract",
+                "KEYWORD_1": "keyword",
+                "TITLE": "title",
+            }
+
+            with gdaltest.tempfile(
+                "/vsimem/test_ogr_wfs_vsimem_wfs200_paging_with_short_server_response?SERVICE=WFS&VERSION=2.0.0&REQUEST=DescribeFeatureType&TYPENAME=my_layer",
+                """<xsd:schema xmlns:foo="http://foo" xmlns:gml="http://www.opengis.net/gml" xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" targetNamespace="http://foo">
+                    <xsd:import namespace="http://www.opengis.net/gml" schemaLocation="http://foo/schemas/gml/3.2.1/base/gml.xsd"/>
+                    <xsd:complexType name="my_layerType">
+                        <xsd:complexContent>
+                        <xsd:extension base="gml:AbstractFeatureType">
+                            <xsd:sequence>
+                            <xsd:element maxOccurs="1" minOccurs="0" name="str" nillable="true" type="xsd:string"/>
+                            <xsd:element maxOccurs="1" minOccurs="0" name="boolean" nillable="true" type="xsd:boolean"/>
+                            <xsd:element maxOccurs="1" minOccurs="0" name="short" nillable="true" type="xsd:short"/>
+                            <xsd:element maxOccurs="1" minOccurs="0" name="int" nillable="true" type="xsd:int"/>
+                            <xsd:element maxOccurs="1" minOccurs="0" name="float" nillable="true" type="xsd:float"/>
+                            <xsd:element maxOccurs="1" minOccurs="0" name="double" nillable="true" type="xsd:double"/>
+                            <xsd:element maxOccurs="1" minOccurs="0" name="dt" nillable="true" type="xsd:dateTime"/>
+                            <xsd:element maxOccurs="1" minOccurs="0" name="shape" nillable="true" type="gml:PointPropertyType"/>
+                            </xsd:sequence>
+                        </xsd:extension>
+                        </xsd:complexContent>
+                    </xsd:complexType>
+                    <xsd:element name="my_layer" substitutionGroup="gml:_Feature" type="foo:my_layerType"/>
+                </xsd:schema>
+                """,
+            ), gdaltest.tempfile(
+                "/vsimem/test_ogr_wfs_vsimem_wfs200_paging_with_short_server_response?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=my_layer&STARTINDEX=0&COUNT=2",
+                """<wfs:FeatureCollection xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                    xmlns:ogc="http://www.opengis.net/ogc"
+                    xmlns:foo="http://foo"
+                    xmlns:wfs="http://www.opengis.net/wfs"
+                    xmlns:ows="http://www.opengis.net/ows"
+                    xmlns:xlink="http://www.w3.org/1999/xlink"
+                    xmlns:gml="http://www.opengis.net/gml"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    numberMatched="2" numberReturned="1"
+                    timeStamp="2015-04-17T14:14:24.859Z"
+                    xsi:schemaLocation="http://foo /vsimem/wfs_endpoint?SERVICE=WFS&amp;VERSION=2.0.0&amp;REQUEST=DescribeFeatureType&amp;TYPENAME=my_layer
+                                        http://www.opengis.net/wfs/2.0 http://schemas.opengis.net/wfs/2.0/wfs.xsd">
+                        <gml:featureMembers>
+                            <foo:my_layer gml:id="my_layer.1">
+                                <foo:str>str</foo:str>
+                                <foo:boolean>true</foo:boolean>
+                                <foo:short>1</foo:short>
+                                <foo:int>123456789</foo:int>
+                                <foo:float>1.2</foo:float>
+                                <foo:double>1.23</foo:double>
+                                <foo:dt>2015-04-17T12:34:56Z</foo:dt>
+                                <foo:shape>
+                                    <gml:Point srsDimension="2" srsName="urn:ogc:def:crs:EPSG::4326">
+                                        <gml:pos>49 2</gml:pos>
+                                    </gml:Point>
+                                </foo:shape>
+                            </foo:my_layer>
+                        </gml:featureMembers>
+                    </wfs:FeatureCollection>
+                """,
+            ), gdaltest.tempfile(
+                "/vsimem/test_ogr_wfs_vsimem_wfs200_paging_with_short_server_response?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=my_layer&STARTINDEX=1&COUNT=2",
+                """<wfs:FeatureCollection xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                xmlns:ogc="http://www.opengis.net/ogc"
+                xmlns:foo="http://foo"
+                xmlns:wfs="http://www.opengis.net/wfs"
+                xmlns:ows="http://www.opengis.net/ows"
+                xmlns:xlink="http://www.w3.org/1999/xlink"
+                xmlns:gml="http://www.opengis.net/gml"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                numberMatched="2" numberReturned="1"
+                timeStamp="2015-04-17T14:14:24.859Z"
+                xsi:schemaLocation="http://foo /vsimem/wfs_endpoint?SERVICE=WFS&amp;VERSION=1.1.0&amp;REQUEST=DescribeFeatureType&amp;TYPENAME=my_layer
+                                    http://www.opengis.net/wfs/2.0 http://schemas.opengis.net/wfs/2.0/wfs.xsd">
+                    <gml:featureMembers>
+                        <foo:my_layer gml:id="my_layer.2">
+                        </foo:my_layer>
+                    </gml:featureMembers>
+                </wfs:FeatureCollection>
+                """,
+            ):
+                f = lyr.GetNextFeature()
+                assert f is not None
+                if f.gml_id != "my_layer.1":
+                    f.DumpReadable()
+                    pytest.fail()
+
+                f = lyr.GetNextFeature()
+                assert f is not None
+                if f.gml_id != "my_layer.2":
+                    f.DumpReadable()
+                    pytest.fail()
+
+                f = lyr.GetNextFeature()
+                if f is not None:
+                    f.DumpReadable()
+                    pytest.fail()
+
+
 ###############################################################################
 def test_ogr_wfs_vsimem_wfs200_json(with_and_without_streaming):
     with gdaltest.tempfile(
