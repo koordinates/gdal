@@ -91,8 +91,7 @@ OGRWFSLayer::OGRWFSLayer(OGRWFSDataSource *poDSIn, OGRSpatialReference *poSRSIn,
       dfMinY(0.0), dfMaxX(0.0), dfMaxY(0.0), bHasExtents(false),
       poFetchedFilterGeom(nullptr), nExpectedInserts(0), bInTransaction(false),
       bUseFeatureIdAtLayerLevel(false), bPagingActive(false),
-      nPagingStartIndex(0), nFeatureRead(0), nFeatureCountRequested(0),
-      pszRequiredOutputFormat(nullptr)
+      nPagingStartIndex(0), nFeatureRead(0), pszRequiredOutputFormat(nullptr)
 {
     SetDescription(pszName);
 }
@@ -396,7 +395,6 @@ CPLString OGRWFSLayer::MakeGetFeatureURL(int nRequestMaxFeatures,
                                                   poDS->GetBaseStartIndex()));
             bPagingActive = true;
         }
-        nFeatureCountRequested = nRequestMaxFeatures;
     }
 
     if (nRequestMaxFeatures)
@@ -1183,7 +1181,7 @@ void OGRWFSLayer::ResetReading()
         bReloadNeeded = true;
     nPagingStartIndex = 0;
     nFeatureRead = 0;
-    nFeatureCountRequested = 0;
+    m_bHasReadAtLeastOneFeatureInThisPage = false;
     if (bReloadNeeded)
     {
         GDALClose(poBaseDS);
@@ -1217,14 +1215,9 @@ OGRFeature *OGRWFSLayer::GetNextFeature()
 
     while (true)
     {
-        if (bPagingActive &&
-            nFeatureRead == nPagingStartIndex + nFeatureCountRequested)
-        {
-            bReloadNeeded = true;
-            nPagingStartIndex = nFeatureRead;
-        }
         if (bReloadNeeded)
         {
+            m_bHasReadAtLeastOneFeatureInThisPage = false;
             GDALClose(poBaseDS);
             poBaseDS = nullptr;
             poBaseLayer = nullptr;
@@ -1274,8 +1267,17 @@ OGRFeature *OGRWFSLayer::GetNextFeature()
 
         OGRFeature *poSrcFeature = poBaseLayer->GetNextFeature();
         if (poSrcFeature == nullptr)
+        {
+            if (bPagingActive && m_bHasReadAtLeastOneFeatureInThisPage)
+            {
+                bReloadNeeded = true;
+                nPagingStartIndex = nFeatureRead;
+                continue;
+            }
             return nullptr;
+        }
         nFeatureRead++;
+        m_bHasReadAtLeastOneFeatureInThisPage = true;
         if (bCountFeaturesInGetNextFeature)
             nFeatures++;
 
