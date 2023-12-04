@@ -52,6 +52,10 @@ if (MSVC)
   add_definitions(-D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE)
   add_definitions(-DNOMINMAX)
 endif ()
+if (DEBUG_VERBOSE)
+  add_definitions(-DDEBUG_VERBOSE)
+endif ()
+
 #
 include(CheckCompilerMachineOption)
 include(CheckCompilerSIMDFeature)
