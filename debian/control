@@ -161,7 +161,7 @@ Description: Geospatial Data Abstraction Library - Utility programs
  ogrtindex.
 
 Package: gdal-data
-Architecture: all
+Architecture: any
 Multi-Arch: foreign
 Depends: ${misc:Depends}
 Description: Geospatial Data Abstraction Library - Data files
