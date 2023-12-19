@@ -152,7 +152,7 @@ override_dh_auto_configure:
 			--with-mysql \
 			--with-netcdf \
 			--with-odbc \
-			--with-openjpeg=no \
+			--with-openjpeg=yes \
 			--with-pg \
 			--with-poppler=yes \
 			--with-proj=yes \
