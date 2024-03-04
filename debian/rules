@@ -149,3 +149,7 @@ override_dh_numpy3:
 
 override_dh_makeshlibs:
 	dh_makeshlibs -- -c0 -v$(UPSTREAM_VERSION)
+
+# disable ZSTD compression since it seems to break gdal-data package when uploaded to aptly
+override_dh_builddeb:
+	dh_builddeb -- -Zgzip
