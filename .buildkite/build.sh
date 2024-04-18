@@ -57,3 +57,5 @@ time docker run \
   -w "/src" \
   "${ECR}/ci-tools:latest" \
   sign-debs "/src/build-jammy/*.deb"
+
+mv build-jammy "build-${BUILDKITE_JOB_ID}"
