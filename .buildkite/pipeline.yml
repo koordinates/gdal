@@ -5,13 +5,13 @@ steps:
       - label: "build package (amd64)"
         command: ".buildkite/build.sh"
         artifact_paths:
-          - "build-jammy/*"
+          - "build-*/*"
         agents:
           queue: default
       - label: "build package (arm64)"
         command: ".buildkite/build.sh"
         artifact_paths:
-          - "build-jammy/*"
+          - "build-*/*"
         agents:
           queue: default_arm64
 
@@ -19,19 +19,12 @@ steps:
     prompt: "Release to archive?"
 
   - label: ":debian: Publish deb"
-    command:
-      - >
-        aptly-upload
-        --aptly-url https://apt-repo.kx.gd
-        --retries 3
-        --repo kx-builds-jammy
-        --series jammy
-        build-jammy/*.deb
+    command: ".buildkite/publish-deb.sh"
     retry:
       automatic: true
     plugins:
       artifacts#v1.2.0:
-        download: "build-jammy/*.deb"
+        download: "build-*/*.deb"
       docker#v1.4.0:
         image: "${ECR}/ci-tools"
         always-pull: true
