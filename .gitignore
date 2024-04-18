@@ -171,3 +171,6 @@ gdal/share
 CMakeSettings.json
 CMakeUserPresets.json
 out/
+
+# kx
+build-jammy
