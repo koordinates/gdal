@@ -54,7 +54,7 @@ Vcs-Git: https://salsa.debian.org/debian-gis-team/gdal.git
 Homepage: http://www.gdal.org/
 Rules-Requires-Root: no
 
-Package: libgdal34
+Package: libgdal36
 Architecture: any
 Section: libs
 Depends: gdal-data (>= ${source:Version}),
@@ -84,7 +84,7 @@ Description: Geospatial Data Abstraction Library
 Package: libgdal-dev
 Architecture: any
 Section: libdevel
-Depends: libgdal34 (= ${binary:Version}),
+Depends: libgdal36 (= ${binary:Version}),
          libc6-dev,
          libarmadillo-dev,
          libcurl-ssl-dev,
