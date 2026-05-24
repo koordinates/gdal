@@ -93,6 +93,7 @@ override_dh_auto_configure:
 			-DGDAL_USE_WEBP=ON \
 			-DGDAL_USE_XERCESC=ON \
 			-DGDAL_USE_ZSTD=ON \
+			-DGDAL_USE_KEA=ON \
 		; \
 	done
 
