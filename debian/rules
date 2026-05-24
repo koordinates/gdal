@@ -99,6 +99,7 @@ override_dh_auto_configure:
 			-DGDAL_USE_ZSTD=ON \
 			-DGDAL_USE_KEA=ON \
 			-DGDAL_USE_ARROW=ON \
+			-DCMAKE_CXX_STANDARD=20 \
 		; \
 	done
 
