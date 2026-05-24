@@ -1,0 +1,3 @@
+# False positive, Build-Depends on both python3-numpy & dh-sequence-numpy3.
+missing-build-dependency-for-dh_-command dh_numpy3 *
+
