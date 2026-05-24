@@ -44,7 +44,9 @@ Build-Depends: cmake,
                swig,
                zlib1g-dev,
                libssl-dev,
-               libkea-dev
+               libkea-dev,
+               libarrow-dev,
+               libparquet-dev
 Standards-Version: 4.7.2
 Vcs-Browser: https://salsa.debian.org/debian-gis-team/gdal
 Vcs-Git: https://salsa.debian.org/debian-gis-team/gdal.git
@@ -107,6 +109,8 @@ Depends: libgdal36 (= ${binary:Version}),
          libzstd-dev,
          libssl-dev,
          libkea-dev,
+         libarrow-dev,
+         libparquet-dev,
          ${misc:Depends}
 Description: Geospatial Data Abstraction Library - Development files
  GDAL is a translator library for raster geospatial data formats.
