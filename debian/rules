@@ -33,7 +33,6 @@ ifneq (,$(filter $(DEB_HOST_ARCH),sh3 sh4))
   export DEB_CXXFLAGS_MAINT_APPEND=-fno-guess-branch-probability
 endif
 
-export DEB_BUILD_OPTIONS=nostrip
 
 versions:
 	@echo Gdal version: $(GDAL_MAJOR).$(GDAL_MINOR).$(GDAL_PATCH)
