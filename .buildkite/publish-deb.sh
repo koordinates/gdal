@@ -12,6 +12,6 @@ done
 aptly-upload \
     --aptly-url https://apt-repo.kx.gd \
     --retries 3 \
-    --repo kx-builds-jammy \
-    --series jammy \
+    --repo kx-builds-trixie \
+    --series trixie \
     collated/*.deb
