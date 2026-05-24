@@ -97,6 +97,7 @@ override_dh_auto_configure:
 			-DGDAL_USE_XERCESC=ON \
 			-DGDAL_USE_ZSTD=ON \
 			-DAVIF_VERSION_CHECK=OFF \
+			-DGDAL_USE_KEA=ON \
 		; \
 	done
 
