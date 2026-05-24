@@ -44,7 +44,7 @@ Build-Depends: cmake,
                swig,
                zlib1g-dev,
                libssl-dev,
-               libkea-dev,
+               libkea1.6,
                libarrow-dev,
                libparquet-dev
 Standards-Version: 4.7.2
@@ -108,7 +108,7 @@ Depends: libgdal36 (= ${binary:Version}),
          libxml2-dev,
          libzstd-dev,
          libssl-dev,
-         libkea-dev,
+         libkea1.6,
          libarrow-dev,
          libparquet-dev,
          ${misc:Depends}
