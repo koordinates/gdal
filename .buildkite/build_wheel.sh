@@ -71,20 +71,16 @@ sed \
   -e "s|@GDAL_LIB_DIR@||g" \
   -e "s|@GDAL_LIB_OUTPUT_NAME@|gdal|g" \
   -e "s|@GNM_ENABLED@|True|g" \
+  -e "s|extras_require={'numpy': \['numpy > 1.0.0'\]}|install_requires=['numpy>=2.0,<3']|g" \
   "${SRCDIR}/swig/python/setup.py.in" > "${WORKDIR}/setup.py"
 
 echo "--- Building wheel ..."
 cd "${WORKDIR}"
 ${PYTHON} setup.py bdist_wheel
 
-echo "--- Bundling numpy into wheel ..."
-WHEEL_DIR="${WORKDIR}/dist"
-NUMPY_DIR=$(${PYTHON} -c "import numpy, os; print(os.path.dirname(numpy.__file__))")
-${PYTHON} "${SRCDIR}/.buildkite/bundle_numpy_in_wheel.py" "${WHEEL_DIR}" "${NUMPY_DIR}"
-
 echo "--- Copying wheel to output ..."
 mkdir -p "${SRCDIR}/dist"
-cp "${WHEEL_DIR}"/gdal-*.whl "${SRCDIR}/dist/"
+cp "${WORKDIR}/dist"/gdal-*.whl "${SRCDIR}/dist/"
 
 echo "Done. Wheel:"
 ls -la "${SRCDIR}/dist"/gdal-*.whl
