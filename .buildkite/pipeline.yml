@@ -15,8 +15,7 @@ steps:
         agents:
           queue: default_arm64
 
-  - block: "Release?"
-    prompt: "Release to archive?"
+  - wait: ~
 
   - label: ":debian: Publish deb"
     command: ".buildkite/publish-deb.sh"
