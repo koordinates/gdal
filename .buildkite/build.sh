@@ -39,7 +39,7 @@ BUILD_CONTAINER="build-${BUILDKITE_JOB_ID}"
 # the gdal fuzzer tests still run (fuzzers/tests)
 rm -rf ./autotest
 
-echo "--- Building debian package ..."
+echo "--- Building debian packages ..."
 # Uses a docker volume for ccache
 time docker run \
   --name "${BUILD_CONTAINER}" \
@@ -49,6 +49,16 @@ time docker run \
   -w "/kx/source" \
   "${ECR}/trixiebuild:master.latest" \
   /kx/buildscripts/build_binary_package.sh -uc -us
+
+echo "--- Building Python 3.14 wheel ..."
+time docker run \
+  --rm \
+  -v "$(pwd):/kx/source" \
+  -v "$(pwd)/build-trixie:/kx/debs" \
+  -v "$(pwd)/build-trixie:/kx/output" \
+  -w "/kx/source" \
+  "${ECR}/kx-base-py314-build:master.latest" \
+  /kx/source/.buildkite/build_wheel.sh
 
 echo "--- Signing debian archives ..."
 time docker run \

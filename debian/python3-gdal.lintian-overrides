@@ -1,3 +1,0 @@
-# False positive
-package-contains-documentation-outside-usr-share-doc [usr/lib/python3/dist-packages/*.*-info/*.txt]
-
