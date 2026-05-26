@@ -50,16 +50,6 @@ time docker run \
   "${ECR}/trixiebuild:master.latest" \
   /kx/buildscripts/build_binary_package.sh -uc -us
 
-echo "--- Building Python 3.14 wheel ..."
-time docker run \
-  --rm \
-  -v "$(pwd):/kx/source" \
-  -v "$(pwd)/build-trixie:/kx/debs" \
-  -v "$(pwd)/build-trixie:/kx/output" \
-  -w "/kx/source" \
-  "${ECR}/kx-base-py314-build:master.latest" \
-  /kx/source/.buildkite/build_wheel.sh
-
 echo "--- Signing debian archives ..."
 time docker run \
   -v "$(pwd):/src" \
