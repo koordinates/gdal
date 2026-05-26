@@ -25,6 +25,9 @@ steps:
         artifact_paths:
           - "dist/*"
         plugins:
+          artifacts#v1.9.4:
+            download: "build-*/*.deb"
+            step: deb-amd64
           docker#v5.13.0:
             image: "${ECR}/kx-base-py314-build:master.latest"
             workdir: /src/
@@ -36,6 +39,9 @@ steps:
         artifact_paths:
           - "dist/*"
         plugins:
+          artifacts#v1.9.4:
+            download: "build-*/*.deb"
+            step: deb-arm64
           docker#v5.13.0:
             image: "${ECR}/kx-base-py314-build:master.latest"
             workdir: /src/
