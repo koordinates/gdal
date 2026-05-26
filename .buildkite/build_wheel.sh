@@ -63,7 +63,14 @@ ln -s "${SRCDIR}/swig/python/gdal-utils" "${WORKDIR}/gdal-utils"
 cp "${SRCDIR}/swig/python/README.rst" "${WORKDIR}/"
 cp "${SRCDIR}/swig/python/pyproject.toml" "${WORKDIR}/"
 
-GDAL_VERSION=$(cat "${SRCDIR}/VERSION")
+BASE_VERSION=$(cat "${SRCDIR}/VERSION")
+PATCH=$(echo "${BASE_VERSION}" | cut -d. -f3)
+NEXT_PATCH=$((PATCH + 1))
+MAJOR_MINOR=$(echo "${BASE_VERSION}" | cut -d. -f1-2)
+DEV_TIMESTAMP=$(git -C "${SRCDIR}" show -s --pretty=format:"%cd" --date=format:'%Y%m%d%H%M%S')
+GDAL_VERSION="${MAJOR_MINOR}.${NEXT_PATCH}.dev${DEV_TIMESTAMP}"
+echo "Wheel version: ${GDAL_VERSION}"
+
 sed \
   -e "s|@GDAL_PYTHON_VERSION@|${GDAL_VERSION}|g" \
   -e "s|@PROJECT_BINARY_DIR@|/nonexistent|g" \
