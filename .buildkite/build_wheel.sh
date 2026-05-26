@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Build GDAL Python wheel from source.
-# Runs inside kx-base-py314-build container.
+# Runs inside kx-base-py314-build container via docker plugin.
 #
 # Does a minimal cmake build (core library + Python bindings only) to produce
 # the wheel. At runtime the wheel's extensions load the full-featured libgdal
@@ -15,14 +15,14 @@ fi
 
 PYTHON=/opt/python/bin/python3
 NPROC=$(nproc)
-SRCDIR=/kx/source
+SRCDIR=/src
 
 echo "--- Installing build dependencies ..."
 apt-get update -qq
 apt-get install -y -qq swig libproj-dev
 
 echo "--- Installing Python build dependencies ..."
-${PYTHON} -m pip install --quiet numpy setuptools wheel
+${PYTHON} -m pip install --quiet --index-url https://pypi.org/simple/ numpy setuptools wheel
 
 echo "--- Configuring cmake (minimal, for Python wheel only) ..."
 cmake -B "${SRCDIR}/build-wheel" -S "${SRCDIR}" \
@@ -57,8 +57,8 @@ NUMPY_DIR=$(${PYTHON} -c "import numpy, os; print(os.path.dirname(numpy.__file__
 ${PYTHON} "${SRCDIR}/.buildkite/bundle_numpy_in_wheel.py" "${WHEEL_DIR}" "${NUMPY_DIR}"
 
 echo "--- Copying wheel to output ..."
-mkdir -p /kx/output
-cp "${WHEEL_DIR}"/gdal-*.whl /kx/output/
+mkdir -p "${SRCDIR}/dist"
+cp "${WHEEL_DIR}"/gdal-*.whl "${SRCDIR}/dist/"
 
 echo "Done. Wheel:"
-ls -la /kx/output/gdal-*.whl
+ls -la "${SRCDIR}/dist"/gdal-*.whl

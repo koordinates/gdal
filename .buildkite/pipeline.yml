@@ -1,23 +1,50 @@
 ---
 steps:
-  - group: ":debian: Build & Package"
+  - group: ":debian: Build deb"
     steps:
-      - label: "build package (amd64)"
+      - label: "build deb (amd64)"
+        key: deb-amd64
         command: ".buildkite/build.sh"
         artifact_paths:
           - "build-*/*"
         agents:
           queue: default
-      - label: "build package (arm64)"
+      - label: "build deb (arm64)"
+        key: deb-arm64
         command: ".buildkite/build.sh"
         artifact_paths:
           - "build-*/*"
         agents:
           queue: default_arm64
 
+  - group: ":python: Build wheel"
+    steps:
+      - label: "build wheel (amd64)"
+        depends_on: deb-amd64
+        command: ".buildkite/build_wheel.sh"
+        artifact_paths:
+          - "dist/*"
+        plugins:
+          docker#v5.13.0:
+            image: "${ECR}/kx-base-py314-build:master.latest"
+            workdir: /src/
+        agents:
+          queue: default
+      - label: "build wheel (arm64)"
+        depends_on: deb-arm64
+        command: ".buildkite/build_wheel.sh"
+        artifact_paths:
+          - "dist/*"
+        plugins:
+          docker#v5.13.0:
+            image: "${ECR}/kx-base-py314-build:master.latest"
+            workdir: /src/
+        agents:
+          queue: default_arm64
+
   - wait: ~
 
-  - label: ":debian: Publish deb"
+  - label: ":debian: Publish debs"
     command: ".buildkite/publish-deb.sh"
     retry:
       automatic: true
@@ -31,3 +58,16 @@ steps:
         environment:
           - APTLY_UNAME
           - APTLY_PASSWD
+
+  - label: ":rocket: Publish wheels"
+    command: ".buildkite/publish-wheel.sh"
+    retry:
+      automatic: true
+    plugins:
+      artifacts#v1.9.4:
+        download: "dist/*"
+      docker#v5.13.0:
+        image: "${ECR}/ci-tools:master.latest"
+        workdir: /src
+        environment:
+          - DEVPI_BUILDKITE_NETRC
