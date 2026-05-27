@@ -79,6 +79,7 @@ sed \
   -e "s|@GDAL_LIB_OUTPUT_NAME@|gdal|g" \
   -e "s|@GNM_ENABLED@|True|g" \
   -e "s|extras_require={'numpy': \['numpy > 1.0.0'\]}|install_requires=['numpy>=2.0,<3']|g" \
+  -e "s|if library_version_num < gdal_python_version:|if False:|g" \
   "${SRCDIR}/swig/python/setup.py.in" > "${WORKDIR}/setup.py"
 
 echo "--- Building wheel ..."
