@@ -1,0 +1,28 @@
+---
+include:
+  - https://salsa.debian.org/salsa-ci-team/pipeline/raw/master/recipes/debian.yml
+
+variables:
+  SALSA_CI_AUTOPKGTEST_ARGS: '--no-auto-control'
+  SALSA_CI_DISABLE_AUTOPKGTEST_I386: 1
+  SALSA_CI_ENABLE_BUILD_PACKAGE_PROFILES: 1
+  SALSA_CI_ENABLE_VALIDATE_PACKAGE_CLEAN_UP: 1
+
+autopkgtest:
+  allow_failure: true
+blhc:
+  allow_failure: true
+debrebuild:
+  allow_failure: true
+lintian:
+  allow_failure: true
+piuparts:
+  allow_failure: true
+
+test-build-profiles:
+  extends: .test-build-package-profiles
+  parallel:
+    matrix:
+      - BUILD_PROFILES:
+        - nocheck
+        - nodoc
