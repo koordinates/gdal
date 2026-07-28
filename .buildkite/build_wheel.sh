@@ -13,7 +13,18 @@ if [ -n "${KX_BUILD_DEBUG-}" ]; then
   set -x
 fi
 
+# Newer kx-base-py314-build images ship python at /usr/bin/python3.14 rather
+# than in /opt/python. Prefer /opt/python when present, else fall back.
 PYTHON=/opt/python/bin/python3
+if [ ! -x "${PYTHON}" ]; then
+  PYTHON=/usr/bin/python3.14
+fi
+if [ ! -x "${PYTHON}" ]; then
+  echo "No usable python3.14 found (tried /opt/python/bin/python3 and ${PYTHON})" >&2
+  exit 1
+fi
+echo "Using python: ${PYTHON} ($(${PYTHON} -V 2>&1))"
+
 SRCDIR=/src
 WORKDIR=$(mktemp -d)
 
