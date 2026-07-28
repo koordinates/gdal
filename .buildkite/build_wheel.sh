@@ -79,7 +79,7 @@ sed \
   -e "s|@GDAL_LIB_OUTPUT_NAME@|gdal|g" \
   -e "s|@GNM_ENABLED@|True|g" \
   -e "s|extras_require={'numpy': \['numpy > 1.0.0'\]}|install_requires=['numpy>=2.0,<3']|g" \
-  -e "s|gdal_python_version = \[int(x) for x in version.split('.')\]|gdal_python_version = [int(x) for x in version.split('.')[:3]]|g" \
+  -e "s|gdal_python_version = \[int(x) for x in bindings_version.split('.')\]|gdal_python_version = [int(x) for x in bindings_version.split('.')[:3]]|g" \
   -e "s|if library_version_num < gdal_python_version:|if False:|g" \
   "${SRCDIR}/swig/python/setup.py.in" > "${WORKDIR}/setup.py"
 
