@@ -1,0 +1,15 @@
+Description: Don't install files removed from repacked upstream tarball.
+Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: not-needed
+
+--- a/ogr/CMakeLists.txt
++++ b/ogr/CMakeLists.txt
+@@ -76,8 +76,6 @@ add_dependencies(ogr generate_gdal_versi
+ 
+ set(GDAL_DATA_FILES
+     LICENSE.TXT
+-    ${CMAKE_CURRENT_SOURCE_DIR}/data/cubewerx_extra.wkt
+-    ${CMAKE_CURRENT_SOURCE_DIR}/data/ecw_cs.wkt
+     ${CMAKE_CURRENT_SOURCE_DIR}/data/epsg.wkt
+     ${CMAKE_CURRENT_SOURCE_DIR}/data/esri_StatePlane_extra.wkt
+     ${CMAKE_CURRENT_SOURCE_DIR}/data/ozi_datum.csv
