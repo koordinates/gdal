@@ -29,8 +29,18 @@ SRCDIR=/src
 WORKDIR=$(mktemp -d)
 
 echo "--- Installing GDAL deb packages ..."
+# kx-proposed carries pgdg builds of PROJ and GEOS, newer than the ones GDAL is
+# built against. Left alone, apt picks those libraries, can't then install
+# libproj-dev/libgeos-dev (each wants its own exact library version), and
+# removes libgdal-dev, taking gdal-config with it.
+cat >/etc/apt/preferences.d/kx-gdal-wheel <<'PIN'
+Package: *
+Pin: release l=kx-proposed trixie
+Pin-Priority: 100
+PIN
 apt-get update -qq
-dpkg -i ${SRCDIR}/build-*/*.deb 2>/dev/null || apt-get install -f -y -qq
+# apt rather than dpkg -i, so an unsatisfiable dependency fails here and says why.
+apt-get install -y -qq --no-install-recommends ${SRCDIR}/build-*/*.deb
 
 echo "--- Installing build dependencies ..."
 apt-get install -y -qq swig
