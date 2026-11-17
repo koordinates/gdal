@@ -51,11 +51,13 @@ time docker run \
   /kx/buildscripts/build_binary_package.sh -uc -us
 
 echo "--- Signing debian archives ..."
+# Unquoted, so the glob is expanded here: docker doesn't run a shell, and
+# sign-debs now calls debsigs, which doesn't glob.
 time docker run \
   -v "$(pwd):/src" \
   -e "GPG_KEY=${APT_GPG_KEY}" \
   -w "/src" \
   "${ECR}/ci-tools:latest" \
-  sign-debs "/src/build-trixie/*.deb"
+  sign-debs build-trixie/*.deb
 
 mv build-trixie "build-${BUILDKITE_JOB_ID}"
